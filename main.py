@@ -36,6 +36,9 @@ from fastapi.staticfiles import StaticFiles
 # 不会在运行时执行，只是给 PyInstaller 看
 if False:  # pragma: no cover
     import services.turnstile_solver.api_solver  # noqa: F401
+    import quart  # noqa: F401
+    import patchright  # noqa: F401
+    import rich  # noqa: F401
 
 from api.account_checks import router as account_checks_router
 from api.accounts import router as accounts_router
