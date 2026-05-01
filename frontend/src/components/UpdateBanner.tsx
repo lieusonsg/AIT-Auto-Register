@@ -28,11 +28,10 @@ export default function UpdateBanner() {
         }
         setInfo(data)
       } catch {
-        // 静默失败 — 离线/GitHub API 不通时不影响主功能
+        // silent
       }
     }
     fetchVersion()
-    // 每小时复查一次
     const id = setInterval(fetchVersion, 60 * 60 * 1000)
     return () => {
       cancelled = true
@@ -52,9 +51,9 @@ export default function UpdateBanner() {
   }
 
   return (
-    <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[linear-gradient(135deg,rgba(127,178,255,0.18),rgba(141,227,255,0.10))] px-4 py-2.5 text-sm">
+    <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-[var(--accent-edge)] bg-[var(--accent-soft)] px-4 py-2.5 text-sm">
       <div className="flex items-center gap-2 min-w-0">
-        <Sparkles className="h-4 w-4 text-[#7fb2ff] shrink-0" />
+        <Sparkles className="h-4 w-4 text-[var(--accent)] shrink-0" />
         <span className="text-[var(--text-primary)] truncate">
           有新版本 <b>v{info.latest.tag}</b> 可下载（当前 v{info.current === 'dev' ? 'dev' : info.current}）
         </span>
@@ -62,7 +61,7 @@ export default function UpdateBanner() {
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={open}
-          className="rounded-lg bg-[#7fb2ff] px-3 py-1 text-xs font-medium text-white hover:opacity-90"
+          className="rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-white hover:bg-[var(--accent-hover)]"
         >
           前往下载
         </button>

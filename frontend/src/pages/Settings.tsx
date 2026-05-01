@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import { Save, Eye, EyeOff, Mail, Shield, Cpu, RefreshCw, CheckCircle, XCircle, Sliders, Plus, X, Orbit, Package2, Sparkles, MessageSquare } from 'lucide-react'
+import { Save, Eye, EyeOff, Mail, Shield, Cpu, Sliders, Plus, X, Orbit, Package2, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const PROVIDER_TYPES = ['mailbox', 'captcha', 'sms'] as const
@@ -37,7 +37,7 @@ const PROVIDER_META: Record<ProviderType, {
     createTitle: '新建动态邮箱 Provider',
     addDialogHint: '从邮箱 provider catalog 中选择',
     usageHint: '只有在注册身份选择“系统邮箱”时，才会使用这里的邮箱服务配置。列表行内可以直接查看详情、编辑、设默认和删除。',
-    usageHintClassName: 'rounded-[22px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-[var(--text-secondary)]',
+    usageHintClassName: 'rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-[var(--text-secondary)]',
     listTitle: '邮箱 Provider 列表',
     listDescription: (count: number) => `${count} 个配置，支持查看详情、编辑、设默认、删除。`,
     noAvailableText: '当前没有可新增的邮箱 provider',
@@ -53,7 +53,7 @@ const PROVIDER_META: Record<ProviderType, {
     createTitle: '新建动态验证 Provider',
     addDialogHint: '从验证 provider catalog 中选择',
     usageHint: '协议模式会按已启用顺序自动选择远程打码服务；浏览器模式使用当前默认的验证码 provider。列表行内可以直接查看详情、编辑、设默认、删除。',
-    usageHintClassName: 'rounded-[22px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-[var(--text-secondary)]',
+    usageHintClassName: 'rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-[var(--text-secondary)]',
     listTitle: '验证 Provider 列表',
     listDescription: (count: number) => `${count} 个配置，协议模式会依次读取这里的可用项。`,
     noAvailableText: '当前没有可新增的验证 provider',
@@ -69,7 +69,7 @@ const PROVIDER_META: Record<ProviderType, {
     createTitle: '新建动态接码 Provider',
     addDialogHint: '从接码 provider catalog 中选择',
     usageHint: '当平台需要手机号验证时，会按这里启用的接码 provider 创建临时号码并回填短信验证码。列表行内可以直接查看详情、编辑、设默认和删除。',
-    usageHintClassName: 'rounded-[22px] border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm text-[var(--text-secondary)]',
+    usageHintClassName: 'rounded-lg border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm text-[var(--text-secondary)]',
     listTitle: '接码 Provider 列表',
     listDescription: (count: number) => `${count} 个配置，补手机和短信校验会优先使用这里的默认项。`,
     noAvailableText: '当前没有可新增的接码 provider',
@@ -89,7 +89,7 @@ function SettingsMetric({
   icon: any
 }) {
   return (
-    <div className="rounded-[16px] border border-[var(--border)] bg-[var(--bg-pane)]/58 px-3 py-2.5">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-pane)]/58 px-3 py-2.5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[11px] tracking-[0.16em] text-[var(--text-muted)]">{label}</div>
@@ -169,7 +169,7 @@ function PlatformCapsTab() {
         const identityOptions: ChoiceOption[] = p.supported_identity_mode_options || []
         const oauthOptions: ChoiceOption[] = p.supported_oauth_provider_options || []
         return (
-          <div key={p.name} className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-pane)]/56 p-5">
+          <div key={p.name} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-[var(--text-primary)]">{p.display_name}</h3>
@@ -787,8 +787,8 @@ function CreateProviderDefinitionModal({
   )
 }
 
-export default function Settings() {
-  const [activeTab, setActiveTab] = useState('register')
+export default function Settings({ embedded, defaultTab }: { embedded?: boolean; defaultTab?: string }) {
+  const [activeTab, setActiveTab] = useState(defaultTab || 'register')
   const [form, setForm] = useState<Record<string, string>>({})
   const [configOptions, setConfigOptions] = useState<ConfigOptionsResponse>({
     mailbox_providers: [],
@@ -826,7 +826,7 @@ export default function Settings() {
   const [providerSaved, setProviderSaved] = useState<Record<string, boolean>>({})
   const [providerDeleting, setProviderDeleting] = useState<Record<string, boolean>>({})
   const [providerCreating, setProviderCreating] = useState<Record<string, boolean>>({})
-  const [solverRunning, setSolverRunning] = useState<boolean | null>(null)
+  const [solverRunning] = useState<boolean | null>(null)
 
   const loadConfigData = async () => {
     const [cfg, options] = await Promise.all([
@@ -870,16 +870,12 @@ export default function Settings() {
     loadConfigData()
   }, [])
 
-  const checkSolver = async () => {
-    try { const d = await apiFetch('/solver/status'); setSolverRunning(d.running) }
-    catch { setSolverRunning(false) }
-  }
-  const restartSolver = async () => {
-    await apiFetch('/solver/restart', { method: 'POST' })
-    setSolverRunning(null)
-    setTimeout(checkSolver, 4000)
-  }
-  useEffect(() => { checkSolver() }, [])
+  // Sync activeTab when defaultTab prop changes (sidebar navigation)
+  useEffect(() => {
+    if (defaultTab && defaultTab !== activeTab) {
+      setActiveTab(defaultTab)
+    }
+  }, [defaultTab])
 
   const save = async () => {
     setSaving(true)
@@ -1189,7 +1185,7 @@ export default function Settings() {
   const mailboxCount = providerSettings.mailbox.length
   const captchaCount = providerSettings.captcha.length
   const smsCount = providerSettings.sms.length
-  const solverLabel = solverRunning === null ? '检测中' : solverRunning ? '运行中' : '未运行'
+  const solverLabel = solverRunning === null ? '—' : solverRunning ? '运行中' : '未运行'
   const currentTabMeta = TABS.find(item => item.id === activeTab) ?? TABS[0]
   const currentProviderTab = PROVIDER_TYPES.includes(activeTab as ProviderType) ? activeTab as ProviderType : null
 
@@ -1201,17 +1197,17 @@ export default function Settings() {
     return (
       <>
         {optionsError && (
-          <div className="rounded-[22px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {optionsError}
           </div>
         )}
         {providerError[providerType] && (
-          <div className="rounded-[22px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {providerError[providerType]}
           </div>
         )}
         {providerNotice[providerType] && !providerError[providerType] && (
-          <div className="rounded-[22px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
             {providerNotice[providerType]}
           </div>
         )}
@@ -1219,7 +1215,7 @@ export default function Settings() {
           {meta.usageHint}
         </div>
         {providerType === 'captcha' && (
-          <div className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-pane)]/56 p-5">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
             <div className="mb-2">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">当前策略</h3>
             </div>
@@ -1227,7 +1223,7 @@ export default function Settings() {
             <div className="text-sm text-[var(--text-secondary)] mt-2">{getCaptchaStrategyLabel('headless', configOptions.captcha_policy, configOptions.captcha_providers)}</div>
           </div>
         )}
-        <div className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-pane)]/56 p-5 space-y-4">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">{meta.listTitle}</h3>
@@ -1309,75 +1305,55 @@ export default function Settings() {
     )
   }
 
+  // Filter tabs: when embedded, exclude platform_caps (moved to Advanced)
+  const visibleTabs = embedded
+    ? TABS.filter(t => t.id !== 'platform_caps')
+    : TABS
+
   return (
     <div className="space-y-4">
-      <Card className="overflow-hidden p-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="text-sm font-semibold text-[var(--text-primary)]">配置</div>
-            <Badge variant="default">{currentTabMeta.label}</Badge>
-            <Badge variant={solverRunning ? 'success' : solverRunning === false ? 'danger' : 'secondary'}>{solverLabel}</Badge>
-          </div>
-        </div>
-      </Card>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <SettingsMetric label={PROVIDER_META.mailbox.metricLabel} value={mailboxCount} icon={PROVIDER_META.mailbox.icon} />
-        <SettingsMetric label={PROVIDER_META.captcha.metricLabel} value={captchaCount} icon={PROVIDER_META.captcha.icon} />
-        <SettingsMetric label={PROVIDER_META.sms.metricLabel} value={smsCount} icon={PROVIDER_META.sms.icon} />
-        <SettingsMetric label="求解器" value={solverLabel} icon={Orbit} />
-        <SettingsMetric label="模块" value={TABS.length} icon={Package2} />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
-        <Card className="h-fit bg-[var(--bg-pane)]/60 xl:sticky xl:top-4">
-          <div className="space-y-4">
-            <div>
-              <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">模块</div>
-              <div className="mt-2 text-sm font-medium text-[var(--text-primary)]">选择要操作的控制面板</div>
-            </div>
-            <div className="space-y-1.5">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={cn(
-                    'w-full rounded-2xl border px-3 py-3 text-left transition-colors',
-                    activeTab === id
-                      ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--text-primary)]'
-                      : 'border-transparent text-[var(--text-muted)] hover:border-[var(--border)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={cn('h-4 w-4', activeTab === id ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]')} />
-                    <span className="text-sm font-medium">{label}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            <div className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
-              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                <Sparkles className="h-3.5 w-3.5" />
-                求解器
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                {solverRunning === null
-                  ? <RefreshCw className="h-3.5 w-3.5 animate-spin text-[var(--text-muted)]" />
-                  : solverRunning
-                    ? <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-                    : <XCircle className="h-3.5 w-3.5 text-red-400" />}
-                <span className={cn('text-sm font-medium', solverRunning ? 'text-emerald-400' : 'text-[var(--text-secondary)]')}>
-                  {solverLabel}
-                </span>
-              </div>
-              <Button variant="outline" size="sm" onClick={restartSolver} className="mt-4 w-full">
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                重启 Solver
-              </Button>
+      {!embedded && (
+        <Card className="overflow-hidden p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-sm font-semibold text-[var(--text-primary)]">配置</div>
+              <Badge variant="default">{currentTabMeta.label}</Badge>
+              <Badge variant={solverRunning ? 'success' : solverRunning === false ? 'danger' : 'secondary'}>{solverLabel}</Badge>
             </div>
           </div>
         </Card>
+      )}
+
+      {!embedded && (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <SettingsMetric label={PROVIDER_META.mailbox.metricLabel} value={mailboxCount} icon={PROVIDER_META.mailbox.icon} />
+          <SettingsMetric label={PROVIDER_META.captcha.metricLabel} value={captchaCount} icon={PROVIDER_META.captcha.icon} />
+          <SettingsMetric label={PROVIDER_META.sms.metricLabel} value={smsCount} icon={PROVIDER_META.sms.icon} />
+          <SettingsMetric label="求解器" value={solverLabel} icon={Orbit} />
+          <SettingsMetric label="模块" value={TABS.length} icon={Package2} />
+        </div>
+      )}
+
+      {/* Horizontal tab bar — only show when not navigated via sidebar */}
+      {!(embedded && defaultTab) && (
+      <div className="flex flex-wrap gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--chip-bg)] p-1">
+        {visibleTabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
+              activeTab === id
+                ? 'bg-[var(--accent)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
+      )}
 
         <div className="space-y-4">
           {activeTab === 'platform_caps' ? (
@@ -1385,13 +1361,13 @@ export default function Settings() {
           ) : (
             <>
               {activeTab === 'register' && (
-                <div className="rounded-[22px] border border-[var(--accent-edge)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+                <div className="rounded-lg border border-[var(--accent-edge)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--text-secondary)]">
                   普通使用者只需要理解两件事：注册身份选“系统邮箱”还是“第三方账号”，执行方式选“协议模式 / 后台浏览器自动 / 可视浏览器自动”。这里的配置只是设置默认值。
                 </div>
               )}
               {currentProviderTab && renderProviderPanel(currentProviderTab)}
               {!currentProviderTab && sections.map(({ section, desc, items }) => (
-                <div key={section} className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-pane)]/56 p-5">
+                <div key={section} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
                   <div className="mb-4">
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">{section}</h3>
                     {desc && <p className="text-xs text-[var(--text-muted)] mt-0.5">{desc}</p>}
@@ -1412,7 +1388,6 @@ export default function Settings() {
             </>
           )}
         </div>
-      </div>
       {providerDialog.providerType && dialogItem && (
         <ProviderDetailModal
           title={PROVIDER_META[providerDialog.providerType].detailTitle}

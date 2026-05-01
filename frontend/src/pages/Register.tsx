@@ -390,7 +390,7 @@ export default function Register() {
                         set('identity_provider', option.identityProvider)
                         set('oauth_provider', option.oauthProvider)
                       }}
-                      className={`rounded-[22px] border px-4 py-4 text-left transition-colors ${
+                      className={`rounded-lg border px-4 py-4 text-left transition-colors ${
                         active
                           ? 'border-[var(--accent)] bg-[var(--accent-soft)]'
                           : 'border-[var(--border)] bg-[var(--bg-pane)]/45 hover:border-[var(--accent)]/60'
@@ -420,7 +420,7 @@ export default function Register() {
                       type="button"
                       disabled={option.disabled}
                       onClick={() => !option.disabled && set('executor_type', option.value)}
-                      className={`rounded-[22px] border px-4 py-4 text-left transition-colors ${
+                      className={`rounded-lg border px-4 py-4 text-left transition-colors ${
                         option.disabled
                           ? 'cursor-not-allowed border-[var(--border)] bg-[var(--bg-hover)] opacity-50'
                           : active
@@ -500,19 +500,19 @@ export default function Register() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <div className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
+                <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]"><Mail className="h-3.5 w-3.5" /> Platform</div>
                   <div className="mt-2 text-base font-medium text-[var(--text-primary)]">{currentPlatform?.display_name || form.platform}</div>
                 </div>
-                <div className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
+                <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]"><ShieldCheck className="h-3.5 w-3.5" /> Identity</div>
                   <div className="mt-2 text-base font-medium text-[var(--text-primary)]">{summaryRegistration}</div>
                 </div>
-                <div className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
+                <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]"><Workflow className="h-3.5 w-3.5" /> Executor</div>
                   <div className="mt-2 text-base font-medium text-[var(--text-primary)]">{summaryExecutor}</div>
                 </div>
-                <div className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
+                <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--chip-bg)] p-4">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]"><ScanText className="h-3.5 w-3.5" /> Verification</div>
                   <div className="mt-2 text-base font-medium text-[var(--text-primary)]">{summaryVerification}</div>
                 </div>
@@ -537,7 +537,7 @@ export default function Register() {
                 <CardContent className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
                     {activeTaskStats.map(({ label, value, icon: Icon }) => (
-                      <div key={label} className="rounded-[20px] border border-[var(--border-soft)] bg-[var(--chip-bg)] p-3">
+                      <div key={label} className="rounded-lg border border-[var(--border-soft)] bg-[var(--chip-bg)] p-3">
                         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
                           <Icon className="h-3.5 w-3.5" />
                           {label}
@@ -546,7 +546,7 @@ export default function Register() {
                       </div>
                     ))}
                   </div>
-                  <div className="rounded-[20px] border border-[var(--border-soft)] bg-[var(--chip-bg)] p-3 text-xs text-[var(--text-secondary)]">
+                  <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--chip-bg)] p-3 text-xs text-[var(--text-secondary)]">
                     <div>任务 ID</div>
                     <div className="mt-1 break-all font-mono text-[var(--text-primary)]">{task.id}</div>
                   </div>

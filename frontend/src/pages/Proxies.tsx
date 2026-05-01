@@ -77,13 +77,13 @@ export default function Proxies() {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {metricCards.map(({ label, value, icon: Icon, tone }) => (
-          <Card key={label} className="bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))]">
+          <Card key={label} className="bg-transparent">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">{label}</div>
                 <div className="mt-1.5 text-xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">{value}</div>
               </div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-[16px] border border-[var(--border-soft)] bg-[var(--chip-bg)]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border-soft)] bg-[var(--chip-bg)]">
                 <Icon className={`h-5 w-5 ${tone}`} />
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function Proxies() {
               placeholder="地区标签 (如 US, SG)"
               className="control-surface"
             />
-            <div className="rounded-[18px] border border-[var(--border-soft)] bg-[var(--bg-pane)]/45 px-3.5 py-2.5 text-xs leading-5 text-[var(--text-secondary)]">
+            <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-pane)]/45 px-3.5 py-2.5 text-xs leading-5 text-[var(--text-secondary)]">
               支持单条代理直接录入，也支持多行批量导入。地区标签会一起写入，用于后续筛选和出入口识别。
             </div>
             <Button onClick={add} className="w-full">

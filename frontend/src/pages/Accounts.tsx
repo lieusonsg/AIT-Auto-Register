@@ -562,7 +562,7 @@ function metricAccentClass(tone?: string) {
 
 function DisplayMetricCard({ metric, compact = false }: { metric: any; compact?: boolean }) {
   return (
-    <div className={`group relative overflow-hidden rounded-[18px] border px-3.5 py-3 ${metricToneClass(metric?.tone)}`}>
+    <div className={`group relative overflow-hidden rounded-lg border px-3.5 py-3 ${metricToneClass(metric?.tone)}`}>
       <div className={`pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${metricAccentClass(metric?.tone)}`} />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -1107,7 +1107,7 @@ function ActionMenu({
     <div className="relative flex min-w-[136px] items-center justify-end gap-1.5 whitespace-nowrap">
       {toast && (
         <div
-          className="fixed top-5 right-5 z-[9999] flex items-center gap-2.5 rounded-xl border px-4 py-3 text-[13px] font-medium shadow-lg backdrop-blur-xl cursor-pointer transition-all"
+          className="fixed top-5 right-5 z-[9999] flex items-center gap-2.5 rounded-xl border px-4 py-3 text-[13px] font-medium shadow-lg  cursor-pointer transition-all"
           style={{
             background: toast.type === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
             borderColor: toast.type === 'success' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)',
@@ -1154,7 +1154,7 @@ function ActionMenu({
           {open && typeof document !== 'undefined' && createPortal(
             <div
               ref={menuRef}
-              className="fixed z-[9999] w-[220px] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]/96 py-1.5 shadow-[var(--shadow-soft)] backdrop-blur-xl"
+              className="fixed z-[9999] w-[220px] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]/96 py-1.5 shadow-[var(--shadow-soft)] "
               style={{ top: menuPosition.top, left: menuPosition.left, maxHeight: menuPosition.maxHeight }}
             >
               {actions.map(a => (
@@ -1245,7 +1245,7 @@ function DetailModal({ acc, onClose, onSave }: { acc: any; onClose: () => void; 
         </div>
         {/* ── Scrollable Content ── */}
         <div className="px-6 py-4 space-y-3 flex-1 overflow-y-auto min-h-0">
-          <div className="relative overflow-hidden rounded-[22px] border border-[var(--border)] bg-[linear-gradient(135deg,rgba(var(--accent-rgb),0.13),rgba(var(--accent-strong-rgb),0.06)_42%,rgba(255,255,255,0.035))] p-4 shadow-[var(--shadow-soft)]">
+          <div className="relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--accent-soft)] p-4 shadow-[var(--shadow-soft)]">
             <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[var(--accent-soft)] blur-3xl" />
             <div className="relative flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -1796,7 +1796,7 @@ export default function Accounts() {
             <col className="w-[12%]" />
             <col className="w-[12%]" />
           </colgroup>
-          <thead className="sticky top-0 z-10 backdrop-blur-sm bg-[var(--bg-pane)]/80">
+          <thead className="sticky top-0 z-10  bg-[var(--bg-pane)]/80">
             <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider font-medium text-[var(--text-muted)]">
               <th className="w-10 px-3 py-2 text-left">
                 <input

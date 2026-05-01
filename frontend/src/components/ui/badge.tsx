@@ -3,15 +3,15 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]',
+  'inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium',
   {
     variants: {
       variant: {
-        default: 'border-[var(--accent-edge)] bg-[var(--accent-soft)] text-[var(--text-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]',
-        success: 'border-[rgba(82,211,167,0.22)] bg-[rgba(82,211,167,0.13)] text-emerald-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]',
-        warning: 'border-[rgba(216,154,96,0.24)] bg-[rgba(216,154,96,0.13)] text-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]',
-        danger: 'border-[rgba(228,113,113,0.22)] bg-[rgba(228,113,113,0.13)] text-red-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]',
-        secondary: 'border-[var(--border-soft)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] text-[var(--text-secondary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]',
+        default: 'border-[var(--accent-edge)] bg-[var(--accent-soft)] text-[var(--accent)]',
+        success: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500',
+        warning: 'border-amber-500/20 bg-amber-500/10 text-amber-500',
+        danger: 'border-red-500/20 bg-red-500/10 text-red-500',
+        secondary: 'border-[var(--border)] bg-[var(--chip-bg)] text-[var(--text-muted)]',
       },
     },
     defaultVariants: { variant: 'default' },

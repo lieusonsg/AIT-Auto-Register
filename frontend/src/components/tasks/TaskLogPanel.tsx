@@ -176,7 +176,7 @@ export function TaskLogPanel({
         </button>
       </div>
 
-      <div className="min-h-[260px] flex-1 overflow-y-auto rounded-[26px] border border-[var(--border)] bg-[radial-gradient(circle_at_top_left,rgba(9,182,162,0.12),transparent_35%),linear-gradient(180deg,rgba(3,8,8,0.62),rgba(3,8,8,0.32))] p-4 font-mono text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div className="min-h-[260px] flex-1 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--bg-input)] p-4 font-mono text-xs ">
         {lines.length === 0 && (
           <div className="flex h-full min-h-[180px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] text-[var(--text-muted)]">
             等待任务日志...
