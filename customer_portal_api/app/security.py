@@ -66,15 +66,15 @@ def decode_access_token(token: str) -> dict[str, Any]:
     try:
         encoded_header, encoded_payload, encoded_signature = token.split(".", 2)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的 access token") from exc
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token") from exc
     signing_input = f"{encoded_header}.{encoded_payload}".encode("utf-8")
     expected_signature = hmac.new(settings.jwt_secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
     actual_signature = _b64url_decode(encoded_signature)
     if not hmac.compare_digest(expected_signature, actual_signature):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="access token 签名无效")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token signature is invalid")
     payload = json.loads(_b64url_decode(encoded_payload).decode("utf-8"))
     if int(payload.get("exp", 0) or 0) <= int(utcnow().timestamp()):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="access token 已过期")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token has expired")
     return payload
 
 

@@ -1,22 +1,22 @@
 import time
 import asyncio
 
-# 内存数据库，用于临时存储验证码结果
+# In-memory database for temporary storage of captcha results
 results_db = {}
 
 async def init_db():
-    print("[系统] 结果数据库初始化成功 (内存模式)")
+    print("[System] Results database initialized successfully (in-memory mode)")
 
 async def save_result(task_id, task_type, data):
-    # 存储结果，如果 data 是字典则存入，否则构造字典
+    # Store result; if data is a dict, store directly, otherwise construct a dict
     results_db[task_id] = data
-    print(f"[系统] 任务 {task_id} 状态更新: {data.get('value', '正在处理')}")
+    print(f"[System] Task {task_id} status updated: {data.get('value', 'Processing')}")
 
 async def load_result(task_id):
     return results_db.get(task_id)
 
 async def cleanup_old_results(days_old=7):
-    # 简单的清理逻辑
+    # Simple cleanup logic
     now = time.time()
     to_delete = []
     for tid, res in results_db.items():

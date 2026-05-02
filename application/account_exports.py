@@ -465,7 +465,7 @@ class AccountExportsService:
     def _load_chatgpt_items(self, selection: AccountExportSelection) -> list[AccountRecord]:
         selection.platform = selection.platform or CHATGPT_PLATFORM
         if selection.platform != CHATGPT_PLATFORM:
-            raise ValueError("仅支持 ChatGPT 账号导出")
+            raise ValueError("Only ChatGPT account export is supported")
         return self.repository.select_for_export(selection)
 
     # ------------------------------------------------------------------
@@ -473,7 +473,7 @@ class AccountExportsService:
     # ------------------------------------------------------------------
 
     def export_kiro_go(self, selection: AccountExportSelection) -> ExportArtifact:
-        """导出 Kiro 账号为 Kiro-Go CLI Proxy 兼容的 config.json 格式。"""
+        """Export Kiro accounts in Kiro-Go CLI Proxy compatible config.json format."""
         selection.platform = "kiro"
         items = self.repository.select_for_export(selection)
         accounts = [_make_kiro_go_account(item) for item in items]
@@ -492,9 +492,9 @@ class AccountExportsService:
         )
 
     def export_any2api(self, selection: AccountExportSelection) -> ExportArtifact:
-        """导出账号为 Any2API admin.json 兼容格式。
+        """Export accounts in Any2API admin.json compatible format.
 
-        支持多平台：Kiro → kiroAccounts, Grok → grokTokens, Cursor/Blink/ChatGPT → 对应 config。
+        Supports multiple platforms: Kiro -> kiroAccounts, Grok -> grokTokens, Cursor/Blink/ChatGPT -> corresponding config.
         """
         items = self.repository.select_for_export(selection)
         admin_config = _build_any2api_admin_config(items)

@@ -1,5 +1,5 @@
 """
-CPA (Codex Protocol API) 上传功能
+CPA (Codex Protocol API) upload functionality
 """
 
 import json
@@ -38,7 +38,7 @@ def _get_config_value(key: str) -> str:
 
 
 def _extract_credential(account, key: str) -> str:
-    """从 account 对象提取凭证，支持直接属性和 credentials 列表两种结构。"""
+    """Extract credential from account object, supporting both direct attributes and credentials list structures."""
     val = getattr(account, key, None)
     if val:
         return str(val)
@@ -82,15 +82,15 @@ def _format_cpa_timestamp(value) -> str:
 
 
 def generate_token_json(account) -> dict:
-    """生成 CPA 格式的 Token JSON。"""
+    """Generate CPA format Token JSON."""
     email = getattr(account, "email", "")
     access_token = _extract_credential(account, "access_token")
     refresh_token = _extract_credential(account, "refresh_token")
     id_token = _extract_credential(account, "id_token")
     session_token = _extract_credential(account, "session_token")
 
-    logger.info(f"[CPA] email={email}, access_token={'有' if access_token else '空'}"
-                f"({len(access_token)}字符), user_id={getattr(account, 'user_id', '(无)')}")
+    logger.info(f"[CPA] email={email}, access_token={'present' if access_token else 'empty'}"
+                f"({len(access_token)} chars), user_id={getattr(account, 'user_id', '(none)')}")
 
     expired_str = _format_cpa_timestamp(
         getattr(account, "expired", None) or getattr(account, "expires_at", None)
@@ -103,21 +103,21 @@ def generate_token_json(account) -> dict:
         _extract_credential(account, "chatgpt_account_id"),
     )
 
-    # 1) 从 id_token 解析 account_id (参考项目的做法)
+    # 1) Parse account_id from id_token (as done in the reference project)
     if not account_id and id_token:
         payload = _decode_jwt_payload(id_token)
         auth_info = payload.get("https://api.openai.com/auth", {})
         account_id = auth_info.get("chatgpt_account_id", "")
-        logger.info(f"[CPA] id_token chatgpt_account_id={account_id or '(空)'}")
+        logger.info(f"[CPA] id_token chatgpt_account_id={account_id or '(empty)'}")
 
-    # 2) fallback: 从 access_token 解析
+    # 2) Fallback: parse from access_token
     if not account_id and access_token:
         payload = _decode_jwt_payload(access_token)
         auth_info = payload.get("https://api.openai.com/auth", {})
         account_id = auth_info.get("chatgpt_account_id", "")
-        logger.info(f"[CPA] access_token chatgpt_account_id={account_id or '(空)'}, "
+        logger.info(f"[CPA] access_token chatgpt_account_id={account_id or '(empty)'}, "
                      f"auth_keys={list(auth_info.keys())}")
-    # expired 从 access_token 的 exp 计算
+    # Compute expired from access_token's exp claim
     if not expired_str and access_token:
         payload = _decode_jwt_payload(access_token)
         exp_timestamp = payload.get("exp")
@@ -126,9 +126,9 @@ def generate_token_json(account) -> dict:
                 exp_timestamp, tz=CPA_TIMEZONE)
             expired_str = exp_dt.strftime("%Y-%m-%dT%H:%M:%S+08:00")
 
-    # 3) fallback: /backend-api/me (用 access_token 调)
+    # 3) Fallback: /backend-api/me (called with access_token)
     if not account_id and access_token:
-        logger.info("[CPA] account_id 仍为空，尝试 /backend-api/me")
+        logger.info("[CPA] account_id still empty, trying /backend-api/me")
         try:
             resp = cffi_requests.get(
                 "https://chatgpt.com/backend-api/me",
@@ -147,14 +147,14 @@ def generate_token_json(account) -> dict:
                         break
                 if not account_id:
                     account_id = me.get("id", "")
-                logger.info(f"[CPA] /backend-api/me -> {account_id or '(空)'}")
+                logger.info(f"[CPA] /backend-api/me -> {account_id or '(empty)'}")
         except Exception as e:
-            logger.error(f"[CPA] /backend-api/me 失败: {e}")
+            logger.error(f"[CPA] /backend-api/me failed: {e}")
 
-    # 4) fallback: session_token 刷新拿新 access_token
+    # 4) Fallback: refresh via session_token to get new access_token
     if not account_id:
         if session_token:
-            logger.info("[CPA] 尝试 session_token 刷新获取 account_id")
+            logger.info("[CPA] Trying session_token refresh to obtain account_id")
             try:
                 s = cffi_requests.Session(impersonate="chrome120")
                 s.cookies.set("__Secure-next-auth.session-token",
@@ -170,18 +170,18 @@ def generate_token_json(account) -> dict:
                         ai2 = p2.get("https://api.openai.com/auth", {})
                         account_id = ai2.get("chatgpt_account_id", "")
                         if account_id:
-                            access_token = new_at  # 用新 token
-                            logger.info(f"[CPA] session 刷新成功: {account_id}")
+                            access_token = new_at  # Use new token
+                            logger.info(f"[CPA] session refresh succeeded: {account_id}")
                             exp2 = p2.get("exp")
                             if isinstance(exp2, int) and exp2 > 0:
                                 expired_str = datetime.fromtimestamp(
                                     exp2, tz=CPA_TIMEZONE
                                 ).strftime("%Y-%m-%dT%H:%M:%S+08:00")
             except Exception as e:
-                logger.error(f"[CPA] session 刷新失败: {e}")
+                logger.error(f"[CPA] session refresh failed: {e}")
 
     if not account_id:
-        logger.warning("[CPA] ⚠️ account_id 最终为空! CPA 上传将失败")
+        logger.warning("[CPA] Warning: account_id is ultimately empty! CPA upload will fail")
 
     last_refresh = _format_cpa_timestamp(getattr(account, "last_refresh", None))
     if not last_refresh and access_token:
@@ -210,17 +210,17 @@ def upload_to_cpa(
     api_key: str = None,
     proxy: str = None,
 ) -> Tuple[bool, str]:
-    """上传单个账号到 CPA 管理平台（不走代理）。"""
+    """Upload a single account to the CPA management platform (no proxy)."""
     if not api_url:
         api_url = _get_config_value("cpa_api_url")
     if not api_key:
         api_key = _get_config_value("cpa_api_key")
     if not api_url:
-        return False, "CPA API URL 未配置"
+        return False, "CPA API URL not configured"
 
-    # 上传前检查 account_id
+    # Check account_id before uploading
     if not token_data.get("account_id"):
-        return False, "account_id 为空，无法上传 CPA（JWT 和所有 fallback 均未获取到）"
+        return False, "account_id is empty, cannot upload to CPA (JWT and all fallbacks failed to obtain it)"
 
     upload_url = f"{api_url.rstrip('/')}/v0/management/auth-files"
     filename = f"{token_data['email']}.json"
@@ -230,7 +230,7 @@ def upload_to_cpa(
         "Content-Type": "application/json",
     }
 
-    logger.info(f"[CPA] 上传: email={token_data['email']}, "
+    logger.info(f"[CPA] Uploading: email={token_data['email']}, "
                 f"account_id={token_data.get('account_id','')}")
 
     try:
@@ -246,8 +246,8 @@ def upload_to_cpa(
             impersonate="chrome110",
         )
         if response.status_code in (200, 201, 207):
-            return True, "上传成功"
-        error_msg = f"上传失败: HTTP {response.status_code}"
+            return True, "Upload succeeded"
+        error_msg = f"Upload failed: HTTP {response.status_code}"
         try:
             error_detail = response.json()
             if isinstance(error_detail, dict):
@@ -256,27 +256,27 @@ def upload_to_cpa(
             error_msg = f"{error_msg} - {response.text[:200]}"
         return False, error_msg
     except Exception as e:
-        logger.error(f"CPA 上传异常: {e}")
-        return False, f"上传异常: {str(e)}"
+        logger.error(f"CPA upload exception: {e}")
+        return False, f"Upload exception: {str(e)}"
 
 
 def upload_to_team_manager(
     account, api_url: str = None, api_key: str = None,
 ) -> Tuple[bool, str]:
-    """上传单账号到 Team Manager（直连，不走代理）。"""
+    """Upload a single account to Team Manager (direct connection, no proxy)."""
     if not api_url:
         api_url = _get_config_value("team_manager_url")
     if not api_key:
         api_key = _get_config_value("team_manager_key")
     if not api_url:
-        return False, "Team Manager API URL 未配置"
+        return False, "Team Manager API URL not configured"
     if not api_key:
-        return False, "Team Manager API Key 未配置"
+        return False, "Team Manager API Key not configured"
 
     email = getattr(account, "email", "")
     access_token = _extract_credential(account, "access_token")
     if not access_token:
-        return False, "账号缺少 access_token"
+        return False, "Account missing access_token"
 
     url = api_url.rstrip("/") + "/api/accounts/import"
     headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
@@ -293,8 +293,8 @@ def upload_to_team_manager(
                                   proxies=None, verify=False, timeout=30,
                                   impersonate="chrome110")
         if resp.status_code in (200, 201):
-            return True, "上传成功"
-        error_msg = f"上传失败: HTTP {resp.status_code}"
+            return True, "Upload succeeded"
+        error_msg = f"Upload failed: HTTP {resp.status_code}"
         try:
             detail = resp.json()
             if isinstance(detail, dict):
@@ -303,16 +303,16 @@ def upload_to_team_manager(
             error_msg = f"{error_msg} - {resp.text[:200]}"
         return False, error_msg
     except Exception as e:
-        logger.error(f"Team Manager 上传异常: {e}")
-        return False, f"上传异常: {str(e)}"
+        logger.error(f"Team Manager upload exception: {e}")
+        return False, f"Upload exception: {str(e)}"
 
 
 def test_cpa_connection(api_url: str, api_token: str, proxy: str = None) -> Tuple[bool, str]:
-    """测试 CPA 连接（不走代理）"""
+    """Test CPA connection (no proxy)"""
     if not api_url:
-        return False, "API URL 不能为空"
+        return False, "API URL cannot be empty"
     if not api_token:
-        return False, "API Token 不能为空"
+        return False, "API Token cannot be empty"
     api_url = api_url.rstrip("/")
     test_url = f"{api_url}/v0/management/auth-files"
     headers = {"Authorization": f"Bearer {api_token}"}
@@ -322,12 +322,12 @@ def test_cpa_connection(api_url: str, api_token: str, proxy: str = None) -> Tupl
                                          timeout=10, impersonate="chrome110")
         if response.status_code in (200, 204, 401, 403, 405):
             if response.status_code == 401:
-                return False, "连接成功，但 API Token 无效"
-            return True, "CPA 连接测试成功"
-        return False, f"服务器返回异常状态码: {response.status_code}"
+                return False, "Connection succeeded, but API Token is invalid"
+            return True, "CPA connection test succeeded"
+        return False, f"Server returned abnormal status code: {response.status_code}"
     except cffi_requests.exceptions.ConnectionError as e:
-        return False, f"无法连接到服务器: {str(e)}"
+        return False, f"Cannot connect to server: {str(e)}"
     except cffi_requests.exceptions.Timeout:
-        return False, "连接超时，请检查网络配置"
+        return False, "Connection timed out, please check network configuration"
     except Exception as e:
-        return False, f"连接测试失败: {str(e)}"
+        return False, f"Connection test failed: {str(e)}"

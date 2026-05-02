@@ -1,4 +1,4 @@
-"""ChatGPT OAuth 浏览器流程。"""
+"""ChatGPT OAuth browser flow."""
 import time
 
 from curl_cffi import requests as curl_requests
@@ -71,16 +71,16 @@ def register_with_browser_oauth(
         if chrome_user_data_dir or chrome_cdp_url:
             browser.auto_select_google_account()
         else:
-            log_fn(f"请在浏览器中完成登录/授权，可使用 {method_text}，最长等待 {timeout} 秒")
+            log_fn(f"Please complete login/authorization in the browser. You can use {method_text}. Waiting up to {timeout} seconds.")
             if email_hint:
-                log_fn(f"请确认最终登录账号邮箱为: {email_hint}")
+                log_fn(f"Please confirm the final login account email is: {email_hint}")
 
         callback_url = browser.wait_for_url(
             lambda url: url.startswith(oauth_start.redirect_uri) and "code=" in url,
             timeout=timeout,
         )
         if not callback_url:
-            raise RuntimeError(f"ChatGPT 浏览器登录未在 {timeout} 秒内完成")
+            raise RuntimeError(f"ChatGPT browser login did not complete within {timeout} seconds")
 
         token_info = manager.handle_callback(
             callback_url=callback_url,

@@ -1,4 +1,4 @@
-"""ChatGPT 浏览器注册流程（Camoufox）。"""
+"""ChatGPT browser registration flow (Camoufox)."""
 import base64
 import json
 import random
@@ -77,10 +77,10 @@ SIGNUP_RECOVERY_SELECTORS = [
     'button:has-text("Register")',
     'a:has-text("Create account")',
     'button:has-text("Create account")',
-    'a:has-text("创建账号")',
-    'button:has-text("创建账号")',
-    'a:has-text("注册")',
-    'button:has-text("注册")',
+    'a:has-text("Create account")',
+    'button:has-text("Create account")',
+    'a:has-text("Sign up")',
+    'button:has-text("Sign up")',
 ]
 
 PASSWORDLESS_LOGIN_SELECTORS = [
@@ -89,9 +89,9 @@ PASSWORDLESS_LOGIN_SELECTORS = [
     'button:has-text("one-time code")',
     'button:has-text("one time code")',
     'button:has-text("passwordless")',
-    'button:has-text("一次性验证码")',
-    'button:has-text("驗證碼")',
-    'button:has-text("验证码")',
+    'button:has-text("one-time code")',
+    'button:has-text("verification code")',
+    'button:has-text("verification code")',
 ]
 
 
@@ -174,13 +174,13 @@ def _has_signup_registration_choice(page) -> bool:
     if _find_first_selector(page, SIGNUP_RECOVERY_SELECTORS):
         return True
     text = _get_visible_page_text(page)
-    return bool(re.search(r"sign\s*up|register|create\s*account|还没有帐户|还没有账户|請註冊|请注册|去注册|注册", text, flags=re.I))
+    return bool(re.search(r"sign\s*up|register|create\s*account", text, flags=re.I))
 
 
 def _click_passwordless_login_if_available(page, log, *, context: str) -> bool:
     selector = _click_first(page, PASSWORDLESS_LOGIN_SELECTORS, timeout=1)
     if selector:
-        log(f"{context} 已选择一次性验证码登录: {selector}")
+        log(f"{context} selected one-time code login: {selector}")
         time.sleep(1)
         return True
     try:
@@ -196,7 +196,7 @@ def _click_passwordless_login_if_available(page, log, *, context: str) -> bool:
                   };
                   const target = nodes.find((el) => {
                     const text = String(el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
-                    return visible(el) && /使用一次性验证码登录|使用一次性驗證碼登入|one-time code|one time code|passwordless/i.test(text);
+                    return visible(el) && /one-time code|one time code|passwordless/i.test(text);
                   });
                   if (!target) return false;
                   target.click();
@@ -208,7 +208,7 @@ def _click_passwordless_login_if_available(page, log, *, context: str) -> bool:
     except Exception:
         clicked = False
     if clicked:
-        log(f"{context} 已选择一次性验证码登录")
+        log(f"{context} selected one-time code login")
         time.sleep(1)
     return clicked
 
@@ -367,7 +367,7 @@ def _sync_hidden_birthday_input(page, birthdate: str, log) -> bool:
     except Exception:
         synced = False
     if synced:
-        log(f"about_you 已同步隐藏 birthday: {birthdate}")
+        log(f"about_you synced hidden birthday: {birthdate}")
     return synced
 
 
@@ -458,20 +458,20 @@ def _pick_best_about_you_input(entries: list[dict], field: str, exclude_visible_
 
         score = 0
         if field == "name":
-            if any(token in hints for token in ("full name", "fullname", "全名", "姓名")):
+            if any(token in hints for token in ("full name", "fullname", "full name", "name")):
                 score += 10
             if any(token in hints for token in (" name ", "name", "autocomplete=name")):
                 score += 3
-            if any(token in hints for token in ("age", "年龄", "birthday", "birth", "date of birth", "出生", "生日")):
+            if any(token in hints for token in ("age", "age", "birthday", "birth", "date of birth", "date of birth", "birthday")):
                 score -= 8
         elif field == "age":
-            if any(token in hints for token in ("age", "年龄", "how old")):
+            if any(token in hints for token in ("age", "age", "how old")):
                 score += 10
-            if any(token in hints for token in ("full name", "fullname", "全名", "姓名")):
+            if any(token in hints for token in ("full name", "fullname", "full name", "name")):
                 score -= 10
-            if "name" in hints and "age" not in hints and "年龄" not in hints:
+            if "name" in hints and "age" not in hints and "age" not in hints:
                 score -= 6
-            if any(token in hints for token in ("birthday", "birth", "date of birth", "出生", "生日")):
+            if any(token in hints for token in ("birthday", "birth", "date of birth", "date of birth", "birthday")):
                 score -= 3
         else:
             continue
@@ -522,11 +522,11 @@ def _derive_registration_state_from_page(page) -> dict:
                   const text = String(document.body?.innerText || '').toLowerCase();
                   const hasName = inputs.some((el) => {
                     const hint = `${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`.toLowerCase();
-                    return hint.includes('name') || hint.includes('姓名') || hint.includes('全名');
+                    return hint.includes('name');
                   });
                   const hasAgeOrBirth = inputs.some((el) => {
                     const hint = `${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`.toLowerCase();
-                    return hint.includes('age') || hint.includes('birth') || hint.includes('birthday') || hint.includes('年龄') || hint.includes('生日');
+                    return hint.includes('age') || hint.includes('birth') || hint.includes('birthday');
                   });
                   return (hasName && hasAgeOrBirth) || text.includes('about you');
                 }
@@ -549,7 +549,7 @@ def _recover_signup_password_page(page, log) -> bool:
     selector = _click_first(page, SIGNUP_RECOVERY_SELECTORS, timeout=2)
     if not selector:
         return False
-    log(f"密码页落到登录态，尝试点击注册入口恢复: {selector}")
+    log(f"Password page fell into login state, trying to click signup entry to recover: {selector}")
     time.sleep(1.2)
     return True
 
@@ -557,7 +557,7 @@ def _recover_signup_password_page(page, log) -> bool:
 def _wait_for_signup_entry_transition(page, log, timeout: int = 20) -> dict:
     deadline = time.time() + timeout
     while time.time() < deadline:
-        if _click_passwordless_login_if_available(page, log, context="邮箱页提交后"):
+        if _click_passwordless_login_if_available(page, log, context="after_email_page_submit"):
             time.sleep(0.5)
             continue
         state = _derive_registration_state_from_page(page)
@@ -575,18 +575,18 @@ def _wait_for_signup_entry_transition(page, log, timeout: int = 20) -> dict:
             return state
         error_text = _extract_auth_error_text(page)
         if error_text:
-            raise RuntimeError(f"邮箱页提交失败: {error_text[:300]}")
+            raise RuntimeError(f"Email page submit failed: {error_text[:300]}")
         time.sleep(0.25)
-    raise RuntimeError("邮箱页提交后未进入密码/验证码页面")
+    raise RuntimeError("Email page submit did not reach password/OTP page")
 
 
 def _start_browser_signup_via_page(page, email: str, log) -> dict:
     for entry_url in (PLATFORM_LOGIN_ENTRY, f"{OPENAI_AUTH}/log-in"):
         try:
-            log(f"打开 OpenAI 注册入口: {entry_url}")
+            log(f"Opening OpenAI signup entry: {entry_url}")
             page.goto(entry_url, wait_until="domcontentloaded", timeout=30000)
         except Exception as exc:
-            log(f"注册入口访问失败: {entry_url} -> {exc}")
+            log(f"Signup entry access failed: {entry_url} -> {exc}")
             continue
 
         initial_state = _derive_registration_state_from_page(page)
@@ -603,8 +603,8 @@ def _start_browser_signup_via_page(page, email: str, log) -> dict:
         if not email_selector:
             continue
         if not _fill_input_like_user(page, email_selector, email):
-            raise RuntimeError("邮箱页填写失败")
-        log(f"邮箱页输入框: {email_selector}")
+            raise RuntimeError("Email page fill failed")
+        log(f"Email page input: {email_selector}")
 
         inline_state = _derive_registration_state_from_page(page)
         if inline_state.get("page_type") in {"create_account_password", "login_password"}:
@@ -614,34 +614,34 @@ def _start_browser_signup_via_page(page, email: str, log) -> dict:
 
         submit_selector = _click_first(page, EMAIL_SUBMIT_SELECTORS, timeout=8)
         if submit_selector:
-            log(f"邮箱页已点击继续按钮: {submit_selector}")
+            log(f"Email page clicked continue button: {submit_selector}")
         elif _submit_form_with_fallback(page, email_selector):
-            log("邮箱页未找到可点击 Continue，已使用表单 fallback 提交")
+            log("Email page no clickable Continue found, used form fallback submit")
         else:
-            raise RuntimeError("邮箱页未找到 Continue 按钮")
+            raise RuntimeError("Email page Continue button not found")
 
         return _wait_for_signup_entry_transition(page, log)
 
-    raise RuntimeError("未找到 OpenAI 注册入口邮箱输入框")
+    raise RuntimeError("OpenAI signup entry email input not found")
 
 
 def _start_browser_signup_via_authorize(page, email: str, device_id: str, log) -> dict:
-    log("访问 ChatGPT 首页...")
+    log("Visiting ChatGPT homepage...")
     page.goto(f"{CHATGPT_APP}/", wait_until="domcontentloaded", timeout=30000)
 
-    log("获取 CSRF token...")
+    log("Getting CSRF token...")
     csrf_token = _get_browser_csrf_token(page)
     if not csrf_token:
-        raise RuntimeError("获取 CSRF token 失败")
+        raise RuntimeError("Failed to get CSRF token")
 
-    log(f"提交邮箱: {email}")
+    log(f"Submitting email: {email}")
     authorize_url = _start_browser_signin(page, email, device_id, csrf_token)
     if not authorize_url:
-        raise RuntimeError("提交邮箱失败，未获取 authorize URL")
+        raise RuntimeError("Email submit failed, no authorize URL obtained")
 
     final_url = _browser_authorize(page, authorize_url, log)
     if not final_url:
-        raise RuntimeError("访问 authorize URL 失败")
+        raise RuntimeError("Failed to access authorize URL")
     return _derive_registration_state_from_page(page)
 
 
@@ -1098,10 +1098,10 @@ def _complete_oauth_with_session(cookies_dict: dict, oauth_start, proxy: str | N
             session_meta = _extract_workspace_from_consent_html(s, consent_url)
             workspaces = list(session_meta.get("workspaces") or [])
         if not workspaces:
-            log("  ⚠️ 缺少 oai-client-auth-session workspaces，OAuth 失败")
+            log("  Warning: missing oai-client-auth-session workspaces, OAuth failed")
             return None
         workspace_id = str((workspaces[0] or {}).get("id") or "").strip()
-        log(f"  选择 workspace: {workspace_id}")
+        log(f"  Selected workspace: {workspace_id}")
         ws_resp = s.post(
             "https://auth.openai.com/api/accounts/workspace/select",
             headers={
@@ -1143,7 +1143,7 @@ def _complete_oauth_with_session(cookies_dict: dict, oauth_start, proxy: str | N
             projects = list(orgs[0].get("projects") or [])
             if projects and projects[0].get("id"):
                 org_body["project_id"] = str(projects[0].get("id") or "").strip()
-            log(f"  选择 organization: {org_id}")
+            log(f"  Selected organization: {org_id}")
             org_resp = s.post(
                 "https://auth.openai.com/api/accounts/organization/select",
                 headers={
@@ -1180,7 +1180,7 @@ def _complete_oauth_with_session(cookies_dict: dict, oauth_start, proxy: str | N
 
         callback_url = _follow_redirects_for_code(s, next_url, log)
         if not callback_url:
-            log("  ⚠️ 未能跟到 OAuth callback")
+            log("  Warning: failed to follow redirects to OAuth callback")
             return None
         result_json = submit_callback_url(
             callback_url=callback_url,
@@ -1190,7 +1190,7 @@ def _complete_oauth_with_session(cookies_dict: dict, oauth_start, proxy: str | N
         )
         return json.loads(result_json)
     except Exception as e:
-        log(f"  OAuth 会话补全异常: {e}")
+        log(f"  OAuth session completion exception: {e}")
         return None
 
 
@@ -1230,27 +1230,27 @@ def _derive_oauth_state_from_page(page) -> dict:
 def _submit_login_email_via_page(page, email: str, log) -> dict:
     input_selector = _wait_for_any_selector(page, EMAIL_INPUT_SELECTORS, timeout=15)
     if not input_selector:
-        raise RuntimeError("OAuth 邮箱页未找到输入框")
+        raise RuntimeError("OAuth email page input not found")
     if not _fill_input_like_user(page, input_selector, email):
-        raise RuntimeError("OAuth 邮箱页填写失败")
-    log(f"OAuth 邮箱页输入框: {input_selector}")
+        raise RuntimeError("OAuth email page fill failed")
+    log(f"OAuth email page input: {input_selector}")
     _browser_pause(page)
 
     start_url = str(page.url or "")
     submit_selector = _click_first(page, EMAIL_SUBMIT_SELECTORS, timeout=8)
     if submit_selector:
-        log(f"OAuth 邮箱页已点击继续按钮: {submit_selector}")
+        log(f"OAuth email page clicked continue button: {submit_selector}")
     elif _submit_form_with_fallback(page, input_selector):
-        log("OAuth 邮箱页未找到可点击 Continue，已使用表单 fallback 提交")
+        log("OAuth email page no clickable Continue found, used form fallback submit")
     else:
-        raise RuntimeError("OAuth 邮箱页未找到 Continue 按钮")
+        raise RuntimeError("OAuth email page Continue button not found")
 
     deadline = time.time() + 20
     last_url = start_url
     while time.time() < deadline:
         current_url = str(page.url or "")
         last_url = current_url or last_url
-        if _click_passwordless_login_if_available(page, log, context="OAuth 邮箱页提交后"):
+        if _click_passwordless_login_if_available(page, log, context="after_OAuth_email_submit"):
             time.sleep(0.5)
             continue
         state = _derive_oauth_state_from_page(page)
@@ -1275,11 +1275,11 @@ def _submit_login_email_via_page(page, email: str, log) -> dict:
         if error_text:
             return {"ok": False, "status": 400, "url": current_url, "data": None, "text": error_text}
         time.sleep(0.5)
-    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "OAuth 邮箱页提交后未跳转"}
+    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "OAuth email page submit did not redirect"}
 
 
 def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_callback, phone_callback, proxy: str | None, log) -> dict | None:
-    """在真实浏览器会话内完成 Codex OAuth，返回完整 token 包。"""
+    """Complete Codex OAuth within a real browser session, returns full token package."""
     from .oauth import generate_oauth_url
     from .constants import CODEX_CLIENT_ID, CODEX_REDIRECT_URI, CODEX_SCOPE
 
@@ -1301,7 +1301,7 @@ def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_cal
         except Exception as exc:
             callback_url = _extract_callback_url_from_exception(exc)
             if callback_url:
-                log(f"  OAuth bootstrap 直接捕获 callback: {callback_url[:100]}...")
+                log(f"  OAuth bootstrap directly captured callback: {callback_url[:100]}...")
                 return _submit_callback_result(callback_url, oauth_start, proxy)
             raise
 
@@ -1332,48 +1332,48 @@ def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_cal
                 and page_oauth_url != current_url
                 and _oauth_url_matches_state(page_oauth_url, oauth_start.state)
             ):
-                log("  OAuth 页面检测到更新的授权链接，跟随页面授权链接...")
+                log("  OAuth page detected updated authorization link, following page authorization link...")
                 page.goto(page_oauth_url, wait_until="domcontentloaded", timeout=30000)
                 continue
 
             if state["page_type"] == "login_email":
-                log("  OAuth 页面需要邮箱登录，提交邮箱...")
+                log("  OAuth page requires email login, submitting email...")
                 email_resp = _submit_login_email_via_page(page, email, log)
-                log(f"  OAuth 邮箱页提交状态: {email_resp.get('status', 0)}")
+                log(f"  OAuth email page submit status: {email_resp.get('status', 0)}")
                 if not email_resp.get("ok"):
-                    raise RuntimeError(f"OAuth 邮箱页提交失败: {(email_resp.get('text') or '')[:300]}")
+                    raise RuntimeError(f"OAuth email page submit failed: {(email_resp.get('text') or '')[:300]}")
                 continue
 
             if state["page_type"] in {"login_password", "create_account_password"}:
-                log("  OAuth 页面需要密码登录，提交密码...")
-                # OAuth 流程中直接填密码登录，不尝试恢复到注册态
+                log("  OAuth page requires password login, submitting password...")
+                # In OAuth flow, directly fill password for login, do not attempt to recover to signup state
                 password_resp = _submit_oauth_password_direct(page, password, log)
-                log(f"  OAuth 密码页提交状态: {password_resp.get('status', 0)}")
+                log(f"  OAuth password page submit status: {password_resp.get('status', 0)}")
                 if not password_resp.get("ok"):
-                    raise RuntimeError(f"OAuth 密码页提交失败: {(password_resp.get('text') or '')[:300]}")
+                    raise RuntimeError(f"OAuth password page submit failed: {(password_resp.get('text') or '')[:300]}")
                 continue
 
             if state["page_type"] == "email_otp_verification":
                 if not otp_callback:
-                    log("  ⚠️ OAuth 需要邮箱 OTP 但没有 otp_callback")
+                    log("  Warning: OAuth requires email OTP but no otp_callback provided")
                     return None
-                log("  OAuth 等待邮箱验证码...")
+                log("  OAuth waiting for email verification code...")
                 code = otp_callback()
                 if not code:
-                    log("  ⚠️ OAuth OTP 获取失败")
+                    log("  Warning: OAuth OTP retrieval failed")
                     return None
                 otp_resp = _submit_otp_via_page(page, code, log)
-                log(f"  OAuth 验证码页提交状态: {otp_resp.get('status', 0)}")
+                log(f"  OAuth OTP page submit status: {otp_resp.get('status', 0)}")
                 if not otp_resp.get("ok"):
-                    raise RuntimeError(f"OAuth 验证码校验失败: {(otp_resp.get('text') or '')[:300]}")
+                    raise RuntimeError(f"OAuth OTP verification failed: {(otp_resp.get('text') or '')[:300]}")
                 continue
 
             if state["page_type"] == "about_you":
-                log("  OAuth 页面出现 about_you，继续页面填写...")
+                log("  OAuth page showing about_you, continuing page fill...")
                 about_resp = _submit_about_you_via_page(page, log)
-                log(f"  OAuth about_you 提交状态: {about_resp.get('status', 0)}")
+                log(f"  OAuth about_you submit status: {about_resp.get('status', 0)}")
                 if not about_resp.get("ok"):
-                    raise RuntimeError(f"OAuth about_you 提交失败: {(about_resp.get('text') or '')[:300]}")
+                    raise RuntimeError(f"OAuth about_you submit failed: {(about_resp.get('text') or '')[:300]}")
                 continue
 
             if state["page_type"] in {"consent", "workspace_selection", "organization_selection", "external_url"}:
@@ -1384,12 +1384,12 @@ def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_cal
                 session_result = _complete_oauth_with_session(cookies_dict, oauth_start, proxy, log)
                 if session_result:
                     return session_result
-                log("  ⚠️ 页面已到 consent/workspace，但会话补全失败")
+                log("  Warning: page reached consent/workspace, but session completion failed")
                 return None
 
             if state["page_type"] == "add_phone":
                 if phone_callback:
-                    log("  OAuth 检测到 add_phone，优先执行短信验证...")
+                    log("  OAuth detected add_phone, executing SMS verification first...")
                     try:
                         _handle_add_phone_challenge(
                             page, phone_callback,
@@ -1398,23 +1398,23 @@ def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_cal
                         )
                         continue
                     except Exception as exc:
-                        log(f"  短信验证失败，停止 OAuth 流程: {exc}")
+                        log(f"  SMS verification failed, stopping OAuth flow: {exc}")
                         return None
 
-                # 先尝试跳过 add_phone，直接重新访问 OAuth 授权 URL
-                # 用户已登录，重新访问 auth URL 应该能直接跳到 callback
-                log("  检测到 add_phone，尝试跳过...")
+                # First try to skip add_phone, directly re-visit OAuth authorization URL
+                # User is already logged in, re-visiting auth URL should directly jump to callback
+                log("  Detected add_phone, trying to skip...")
                 try:
                     page.goto(oauth_start.auth_url, wait_until="domcontentloaded", timeout=15000)
                     time.sleep(2)
                     current_url = str(page.url or "")
 
-                    # 检查是否直接拿到了 callback
+                    # Check if callback was directly obtained
                     callback_url = ""
                     if "code=" in current_url:
                         callback_url = current_url
                     else:
-                        # 可能需要跟随重定向
+                        # May need to follow redirects
                         for _ in range(5):
                             time.sleep(1)
                             current_url = str(page.url or "")
@@ -1423,56 +1423,56 @@ def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_cal
                                 break
 
                     if callback_url:
-                        log("  ✓ 成功跳过 add_phone，获取到 OAuth callback")
+                        log("  Success: skipped add_phone, obtained OAuth callback")
                         return _submit_callback_result(callback_url, oauth_start, proxy)
 
-                    # 检查页面状态
+                    # Check page state
                     skip_state = _derive_registration_state_from_page(page)
                     if skip_state.get("page_type") in {"consent", "workspace_selection", "organization_selection"}:
-                        log("  ✓ 跳过 add_phone 到达 consent 页面")
-                        # 尝试在浏览器里完成 consent 流程
+                        log("  Success: skipped add_phone, reached consent page")
+                        # Try to complete consent flow in browser
                         browser_result = _complete_oauth_in_browser(page, oauth_start, proxy, log)
                         if browser_result:
                             return browser_result
-                        # 回退到 curl session 方式
+                        # Fallback to curl session approach
                         cookies_dict = _get_cookies(page)
                         session_result = _complete_oauth_with_session(cookies_dict, oauth_start, proxy, log)
                         if session_result:
                             return session_result
 
                     if skip_state.get("page_type") == "add_phone":
-                        log("  跳过失败，仍在 add_phone 页面")
+                        log("  Skip failed, still on add_phone page")
                     else:
-                        log(f"  跳过后页面状态: {skip_state.get('page_type') or '-'}")
-                        # 继续状态机循环
+                        log(f"  Page state after skip: {skip_state.get('page_type') or '-'}")
+                        # Continue state machine loop
                         continue
 
                 except Exception as exc:
                     callback_url = _extract_callback_url_from_exception(exc)
                     if callback_url:
                         return _submit_callback_result(callback_url, oauth_start, proxy)
-                    log(f"  跳过 add_phone 异常: {exc}")
+                    log(f"  Skip add_phone exception: {exc}")
 
-                log("  ⚠️ add_phone 无法跳过且无可用接码服务")
+                log("  Warning: add_phone cannot be skipped and no SMS service available")
                 return None
 
-            # chatgpt_home: 页面可能正在 JS 重定向（如跳转到 add-phone）
-            # 等待更长时间让重定向完成
+            # chatgpt_home: page may be doing JS redirect (e.g. to add-phone)
+            # Wait longer for redirect to complete
             if state["page_type"] == "chatgpt_home":
-                # 检查是否是错误页面
+                # Check if this is an error page
                 if "error" in current_url:
                     error_msg = current_url.split("error=")[-1].split("&")[0] if "error=" in current_url else "unknown"
-                    log(f"  OAuth 错误页面: {error_msg} url={current_url[:150]}")
-                    raise RuntimeError(f"OpenAI OAuth 错误: {error_msg}")
+                    log(f"  OAuth error page: {error_msg} url={current_url[:150]}")
+                    raise RuntimeError(f"OpenAI OAuth error: {error_msg}")
                 time.sleep(2)
                 new_url = str(page.url or "")
                 if new_url != current_url:
                     continue
-                # 检查 cookie 里是否有 session
+                # Check if session cookie exists
                 cookies_dict = _get_cookies(page)
                 for ck, cv in cookies_dict.items():
                     if "session" in ck.lower() and cv:
-                        log(f"  chatgpt_home 检测到 session cookie: {ck}")
+                        log(f"  chatgpt_home detected session cookie: {ck}")
                         session_result = _complete_oauth_with_session(cookies_dict, oauth_start, proxy, log)
                         if session_result:
                             return session_result
@@ -1493,10 +1493,10 @@ def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_cal
 
             error_text = _extract_auth_error_text(page)
             if error_text:
-                raise RuntimeError(f"OAuth 页面错误: {error_text[:300]}")
+                raise RuntimeError(f"OAuth page error: {error_text[:300]}")
             time.sleep(0.5)
     except Exception as e:
-        log(f"  OAuth 异常: {e}")
+        log(f"  OAuth exception: {e}")
         return None
 
     cookies_dict = _get_cookies(page)
@@ -1506,9 +1506,9 @@ def _do_codex_oauth(page, cookies_dict: dict, email: str, password: str, otp_cal
 
     session_token = cookies_dict.get("__Secure-next-auth.session-token", "")
     if not session_token:
-        log("  ⚠️ 无 session_token，OAuth 失败")
+        log("  Warning: no session_token, OAuth failed")
         return None
-    log("  ⚠️ 完整 OAuth 失败，回退 session access_token")
+    log("  Warning: full OAuth failed, falling back to session access_token")
     return None
 
 
@@ -1544,7 +1544,7 @@ def _handle_post_signup_onboarding(page, log) -> None:
     if "chatgpt.com" not in current_url:
         return
     try:
-        # 可能弹出 persistent storage 提示，优先点 Allow，不影响主流程也可点 Block。
+        # May show persistent storage prompt, prefer Allow, Block is also fine for main flow.
         allow_selector = _click_first(
             page,
             [
@@ -1556,11 +1556,11 @@ def _handle_post_signup_onboarding(page, log) -> None:
             timeout=1,
         )
         if allow_selector:
-            log(f"已处理浏览器弹窗: {allow_selector}")
+            log(f"Handled browser popup: {allow_selector}")
     except Exception:
         pass
 
-    # 新账号常见 onboarding 问卷页，优先 Skip。
+    # New accounts often show onboarding survey page, prefer Skip.
     try:
         if page.locator("text=What brings you to ChatGPT?").first.count() > 0:
             skip_selector = _click_first(
@@ -1574,7 +1574,7 @@ def _handle_post_signup_onboarding(page, log) -> None:
                 timeout=5,
             )
             if skip_selector:
-                log(f"已处理 onboarding 页面: {skip_selector}")
+                log(f"Handled onboarding page: {skip_selector}")
                 _browser_pause(page)
     except Exception:
         pass
@@ -1634,8 +1634,8 @@ def _handle_add_phone_challenge(
 ) -> dict:
     if not phone_callback:
         raise RuntimeError(
-            "ChatGPT 注册遇到手机号验证，但未配置 phone_callback。"
-            "请在 RegisterConfig.extra 中配置接码服务，或手动完成手机验证。"
+            "ChatGPT registration encountered phone verification, but no phone_callback configured. "
+            "Please configure SMS service in RegisterConfig.extra, or manually complete phone verification."
         )
 
     referer = _normalize_url(str(page.url or ""), OPENAI_AUTH) or f"{OPENAI_AUTH}/add-phone"
@@ -1666,11 +1666,11 @@ def _handle_add_phone_challenge(
     if hasattr(phone_callback, "set_resend_callback"):
         phone_callback.set_resend_callback(_request_openai_resend)
 
-    log("注册流程已进入 add_phone，开始准备租号并接收短信验证码...")
+    log("Registration flow entered add_phone, preparing to rent number and receive SMS code...")
     phone_number = str(phone_callback() or "").strip()
     if not phone_number:
-        raise RuntimeError("未获取到手机号")
-    log(f"检测到 add_phone，提交手机号: {_mask_phone_number(phone_number)}")
+        raise RuntimeError("Failed to get phone number")
+    log(f"Detected add_phone, submitting phone number: {_mask_phone_number(phone_number)}")
     _browser_pause(page)
     send_result = _browser_fetch(
         page,
@@ -1686,16 +1686,16 @@ def _handle_add_phone_challenge(
         detail = (send_result.get("text") or "").strip()
         if hasattr(phone_callback, "mark_send_failed"):
             phone_callback.mark_send_failed(detail or f"HTTP {send_status}")
-        raise RuntimeError(f"手机号提交失败: {detail[:200] or f'HTTP {send_status}'}")
+        raise RuntimeError(f"Phone number submit failed: {detail[:200] or f'HTTP {send_status}'}")
     if hasattr(phone_callback, "mark_send_succeeded"):
         phone_callback.mark_send_succeeded()
 
-    log("手机号提交成功，开始等待短信验证码...")
+    log("Phone number submitted successfully, waiting for SMS code...")
     validate_result = None
     for code_attempt in range(3):
         sms_code = str(phone_callback() or "").strip()
         if not sms_code:
-            raise RuntimeError("未获取到短信验证码")
+            raise RuntimeError("Failed to get SMS verification code")
 
         for attempt in range(3):
             _browser_pause(page)
@@ -1714,7 +1714,7 @@ def _handle_add_phone_challenge(
                     phone_callback.report_success()
                 break
             if _is_invalid_phone_otp_response(validate_result):
-                log("短信验证码被判定无效，标记当前短信并继续等待下一条...")
+                log("SMS verification code was judged invalid, marking current SMS and waiting for the next one...")
                 if hasattr(phone_callback, "mark_code_failed"):
                     phone_callback.mark_code_failed("invalid otp code")
                 validate_result = None
@@ -1725,12 +1725,12 @@ def _handle_add_phone_challenge(
             detail = (validate_result.get("text") or "").strip()
             if hasattr(phone_callback, "mark_code_failed"):
                 phone_callback.mark_code_failed(detail or f"HTTP {validate_status}")
-            raise RuntimeError(f"短信验证码校验失败: {detail[:200] or f'HTTP {validate_status}'}")
+            raise RuntimeError(f"SMS verification code validation failed: {detail[:200] or f'HTTP {validate_status}'}")
 
         if validate_result is not None and int(validate_result.get("status") or 0) in (200, 201, 204):
             break
     else:
-        raise RuntimeError("短信验证码校验失败: 多次验证码均无效或未通过")
+        raise RuntimeError("SMS verification code validation failed: multiple codes were invalid or did not pass")
 
     state = _extract_flow_state(
         (validate_result or {}).get("data"),
@@ -1837,7 +1837,7 @@ def _browser_authorize(page, auth_url: str, log) -> str:
         log(f"Authorize -> {final_url[:120]}")
         return final_url
     except Exception as exc:
-        log(f"Authorize 失败: {exc}")
+        log(f"Authorize failed: {exc}")
         return ""
 
 
@@ -1899,12 +1899,12 @@ def _submit_browser_about_you(page, device_id: str, user_agent: str, referer: st
 
 
 def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
-    """在浏览器里完成 OAuth consent 流程，多策略重试点击 Continue。
+    """Complete OAuth consent flow in browser, multi-strategy retry clicking Continue.
 
-    参考 Chrome 扩展项目的 step9 实现:
-    - consent 页面是一个 <form action="/sign-in-with-chatgpt/.../consent">
-    - 首选 form.requestSubmit(button) 而非 button.click()
-    - 多轮重试: requestSubmit → click → dispatchEvent → 刷新重试
+    Reference Chrome extension project step9 implementation:
+    - consent page is a <form action="/sign-in-with-chatgpt/.../consent">
+    - prefer form.requestSubmit(button) over button.click()
+    - multi-round retry: requestSubmit -> click -> dispatchEvent -> refresh retry
     """
     from .oauth import submit_callback_url
 
@@ -1943,8 +1943,8 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
         return None
 
     def _find_consent_button():
-        """按优先级查找 consent 页面的 Continue 按钮"""
-        # 策略 1: 在 consent form 内找 submit 按钮
+        """Find Continue button on consent page by priority"""
+        # Strategy 1: find submit button within consent form
         _sel = CONSENT_FORM_SEL
         btn = page.evaluate("""(sel) => {
             const form = document.querySelector(sel);
@@ -1954,7 +1954,7 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
                 if (el.offsetParent === null) continue;
                 const text = (el.textContent || '').trim().toLowerCase();
                 const ddName = el.getAttribute('data-dd-action-name') || '';
-                if (ddName === 'Continue' || /continue|继续/i.test(text)) return 'form-continue';
+                if (ddName === 'Continue' || /continue/i.test(text)) return 'form-continue';
             }
             const first = Array.from(buttons).find(el => el.offsetParent !== null);
             if (first) return 'form-submit';
@@ -1962,11 +1962,11 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
         }""", _sel)
         if btn:
             return btn
-        # 策略 2: 全局查找 Continue 按钮
+        # Strategy 2: globally find Continue button
         for sel in [
             'button[type="submit"][data-dd-action-name="Continue"]',
             'button:has-text("Continue")',
-            'button:has-text("继续")',
+            'button:has-text("Continue")',
             'button:has-text("Allow")',
             'button:has-text("Authorize")',
             'button[type="submit"]',
@@ -1980,7 +1980,7 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
         return None
 
     def _click_strategy_request_submit(log_round: int) -> bool:
-        """策略 1: form.requestSubmit(button) — 最可靠的表单提交方式"""
+        """Strategy 1: form.requestSubmit(button) - most reliable form submit method"""
         try:
             result = page.evaluate("""(sel) => {
                 const form = document.querySelector(sel);
@@ -1991,7 +1991,7 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
                     if (el.offsetParent === null) continue;
                     const text = (el.textContent || '').trim().toLowerCase();
                     const ddName = el.getAttribute('data-dd-action-name') || '';
-                    if (ddName === 'Continue' || /continue|继续/i.test(text)) { target = el; break; }
+                    if (ddName === 'Continue' || /continue/i.test(text)) { target = el; break; }
                 }
                 if (!target) target = Array.from(buttons).find(el => el.offsetParent !== null);
                 if (!target) return 'no-button';
@@ -2002,31 +2002,31 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
                 target.click();
                 return 'click-fallback';
             }""", CONSENT_FORM_SEL)
-            log(f"  consent 第{log_round}轮 requestSubmit: {result}")
+            log(f"  consent round {log_round}round requestSubmit: {result}")
             return result not in ("no-form", "no-button")
         except Exception as e:
-            log(f"  consent requestSubmit 异常: {e}")
+            log(f"  consent requestSubmit exception: {e}")
             return False
 
     def _click_strategy_playwright(log_round: int) -> bool:
-        """策略 2: Playwright locator.click()"""
+        """Strategy 2: Playwright locator.click()"""
         for sel in [
             'button:has-text("Continue")',
-            'button:has-text("继续")',
+            'button:has-text("Continue")',
             'button[type="submit"]',
         ]:
             try:
                 loc = page.locator(sel).first
                 if loc.is_visible(timeout=1500):
                     loc.click()
-                    log(f"  consent 第{log_round}轮 playwright click: {sel}")
+                    log(f"  consent round {log_round}round playwright click: {sel}")
                     return True
             except Exception:
                 continue
         return False
 
     def _click_strategy_js_dispatch(log_round: int) -> bool:
-        """策略 3: JS dispatchEvent 模拟点击"""
+        """Strategy 3: JS dispatchEvent simulated click"""
         try:
             result = page.evaluate("""() => {
                 const buttons = document.querySelectorAll('button, [role="button"]');
@@ -2034,7 +2034,7 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
                     if (el.offsetParent === null) continue;
                     const text = (el.textContent || '').trim().toLowerCase();
                     const ddName = el.getAttribute('data-dd-action-name') || '';
-                    if (ddName === 'Continue' || /continue|继续/i.test(text)) {
+                    if (ddName === 'Continue' || /continue/i.test(text)) {
                         el.focus();
                         el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
                         return text || 'dispatched';
@@ -2044,7 +2044,7 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
             }
             """)
             if result:
-                log(f"  consent 第{log_round}轮 JS dispatch: {result}")
+                log(f"  consent round {log_round}round JS dispatch: {result}")
                 return True
             return False
         except Exception:
@@ -2059,36 +2059,36 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
 
     try:
         current_url = str(page.url or "")
-        log(f"  浏览器 consent 处理: {current_url[:100]}")
+        log(f"  browser consent handling: {current_url[:100]}")
 
-        # 先检查当前 URL 是否已经有 code
+        # First check if current URL already has code
         result = _check_current_url()
         if result:
-            log("  ✓ 页面已在 callback URL")
+            log("  ✓ page is already at callback URL")
             return result
 
-        # 等待页面加载
+        # wait for page load
         try:
             page.wait_for_load_state("domcontentloaded", timeout=8000)
         except Exception:
             pass
         time.sleep(1)
 
-        # 检查 "Try again" 按钮
+        # check "Try again" button
         try:
             try_again = page.query_selector('button:has-text("Try again")')
             if try_again and try_again.is_visible():
-                log("  consent 页面报错，点击 Try again...")
+                log("  consent page has error, clicking Try again...")
                 try_again.click()
                 time.sleep(3)
         except Exception:
             pass
 
-        # 多轮策略重试
+        # multi-round strategy retry
         for round_idx in range(MAX_ROUNDS):
             result = _check_current_url()
             if result:
-                log("  ✓ 浏览器 OAuth consent 完成")
+                log("  ✓ browser OAuth consent completed")
                 return result
 
             strategy_fn = strategies[min(round_idx, len(strategies) - 1)]
@@ -2098,56 +2098,56 @@ def _complete_oauth_in_browser(page, oauth_start, proxy, log) -> dict | None:
                 time.sleep(2)
                 result = _wait_for_callback(CLICK_EFFECT_TIMEOUT)
                 if result:
-                    log("  ✓ 浏览器 OAuth consent 完成")
+                    log("  ✓ browser OAuth consent completed")
                     return result
-                log(f"  consent 第{round_idx + 1}轮点击后页面未跳转")
+                log(f"  consent round {round_idx + 1}round click did not redirect page")
             else:
-                log(f"  consent 第{round_idx + 1}轮未找到按钮")
+                log(f"  consent round {round_idx + 1}round button not found")
 
-            # 最后一轮前刷新页面重试
+            # refresh page before last round retry
             if round_idx < MAX_ROUNDS - 1:
-                log(f"  consent 刷新页面准备第{round_idx + 2}轮...")
+                log(f"  consent refresh page preparing for round {round_idx + 2}...")
                 try:
                     page.reload(wait_until="domcontentloaded", timeout=15000)
                 except Exception:
                     pass
                 time.sleep(2)
 
-        log(f"  consent {MAX_ROUNDS}轮尝试后仍未完成，当前: {str(page.url or '')[:100]}")
+        log(f"  consent {MAX_ROUNDS}round attempts still not completed, current: {str(page.url or '')[:100]}")
         return None
     except Exception as exc:
         cb = _extract_callback_url_from_exception(exc)
         if cb:
             result = _try_extract_callback(cb)
             if result:
-                log("  ✓ 从异常中提取 callback 完成 OAuth")
+                log("  ✓ extracted callback from exception, OAuth completed")
                 return result
-        log(f"  浏览器 OAuth consent 异常: {exc}")
+        log(f"  browser OAuth consent exception: {exc}")
         return None
 
 
 def _submit_oauth_password_direct(page, password: str, log) -> dict:
-    """OAuth 流程专用：直接填密码登录，不尝试恢复到注册态。"""
+    """OAuth flow specific: directly fill password for login, do not attempt to recover to signup state."""
     input_selector = _wait_for_any_selector(page, PASSWORD_INPUT_SELECTORS, timeout=15)
     if not input_selector:
-        # 密码输入框没出现，可能页面还在加载或跳转了
-        # 等一下再试
+        # Password input not appeared, page may still be loading or redirected
+        # wait and retry
         time.sleep(2)
         input_selector = _wait_for_any_selector(page, PASSWORD_INPUT_SELECTORS, timeout=10)
     if not input_selector:
-        raise RuntimeError("OAuth 密码页未找到输入框")
+        raise RuntimeError("OAuth password page input not found")
     if not _fill_input_like_user(page, input_selector, password):
-        raise RuntimeError("OAuth 密码页填写失败")
-    log(f"  OAuth 密码页输入框: {input_selector}")
+        raise RuntimeError("OAuth password page fill failed")
+    log(f"  OAuth password page input: {input_selector}")
     _browser_pause(page)
 
     submit_selector = _click_first(page, PASSWORD_SUBMIT_SELECTORS, timeout=8)
     if submit_selector:
-        log(f"  OAuth 密码页已点击继续按钮: {submit_selector}")
+        log(f"  OAuth Password page clicked continue button: {submit_selector}")
     elif _submit_form_with_fallback(page, input_selector):
-        log("  OAuth 密码页使用表单 fallback 提交")
+        log("  OAuth password page used form fallback submit")
     else:
-        raise RuntimeError("OAuth 密码页未找到 Continue 按钮")
+        raise RuntimeError("OAuth Password page Continue button not found")
 
     deadline = time.time() + 20
     while time.time() < deadline:
@@ -2163,7 +2163,7 @@ def _submit_oauth_password_direct(page, password: str, log) -> dict:
         if error_text:
             return {"ok": False, "status": 400, "url": current_url, "data": None, "text": error_text}
         time.sleep(0.5)
-    return {"ok": False, "status": 0, "url": str(page.url or ""), "data": None, "text": "OAuth 密码提交后未跳转"}
+    return {"ok": False, "status": 0, "url": str(page.url or ""), "data": None, "text": "OAuth password submit did not redirect"}
 
 
 def _submit_password_via_page(page, password: str, log) -> dict:
@@ -2172,20 +2172,20 @@ def _submit_password_via_page(page, password: str, log) -> dict:
 
     input_selector = _wait_for_any_selector(page, PASSWORD_INPUT_SELECTORS, timeout=15)
     if not input_selector:
-        raise RuntimeError("密码页未找到输入框")
+        raise RuntimeError("Password page input not found")
     if not _fill_input_like_user(page, input_selector, password):
-        raise RuntimeError("密码页填写失败")
-    log(f"密码页输入框: {input_selector}")
+        raise RuntimeError("Password page fill failed")
+    log(f"Password page input: {input_selector}")
     _browser_pause(page)
 
     start_url = str(page.url or "")
     submit_selector = _click_first(page, PASSWORD_SUBMIT_SELECTORS, timeout=8)
     if submit_selector:
-        log(f"密码页已点击继续按钮: {submit_selector}")
+        log(f"Password page clicked continue button: {submit_selector}")
     elif _submit_form_with_fallback(page, input_selector):
-        log("密码页未找到可点击 Continue，已使用表单 fallback 提交")
+        log("Password page no clickable Continue found, used form fallback submit")
     else:
-        raise RuntimeError("密码页未找到 Continue 按钮")
+        raise RuntimeError("Password page Continue button not found")
 
     deadline = time.time() + 20
     last_url = str(page.url or "")
@@ -2201,38 +2201,38 @@ def _submit_password_via_page(page, password: str, log) -> dict:
         if page_type == "login_password" and _recover_signup_password_page(page, log):
             input_selector = _wait_for_any_selector(page, PASSWORD_INPUT_SELECTORS, timeout=5)
             if not input_selector:
-                return {"ok": False, "status": 400, "url": current_url, "data": None, "text": "登录密码页恢复后未找到注册密码输入框"}
+                return {"ok": False, "status": 400, "url": current_url, "data": None, "text": "Login password page recovery: signup password input not found"}
             if not _fill_input_like_user(page, input_selector, password):
-                return {"ok": False, "status": 400, "url": current_url, "data": None, "text": "登录密码页恢复后密码重新填写失败"}
+                return {"ok": False, "status": 400, "url": current_url, "data": None, "text": "Login password page recovery: password re-fill failed"}
             submit_selector = _click_first(page, PASSWORD_SUBMIT_SELECTORS, timeout=5)
             if submit_selector:
-                log(f"恢复后重新点击密码提交按钮: {submit_selector}")
+                log(f"Re-clicked password submit button after recovery: {submit_selector}")
                 start_url = str(page.url or start_url)
                 time.sleep(0.4)
                 continue
             if _submit_form_with_fallback(page, input_selector):
-                log("恢复后未找到密码提交按钮，已使用表单 fallback 提交")
+                log("Password submit button not found after recovery, used form fallback submit")
                 start_url = str(page.url or start_url)
                 time.sleep(0.4)
                 continue
-            return {"ok": False, "status": 400, "url": current_url, "data": None, "text": "登录密码页恢复后未找到提交方式"}
+            return {"ok": False, "status": 400, "url": current_url, "data": None, "text": "Login password page recovery: no submit method found"}
         error_text = _extract_auth_error_text(page)
         if error_text:
             _dump_debug(page, "chatgpt_password_fail")
             return {"ok": False, "status": 400, "url": current_url, "data": None, "text": error_text}
         time.sleep(0.5)
     _dump_debug(page, "chatgpt_password_fail")
-    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "密码页提交后未跳转"}
+    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "Password page submit did not redirect"}
 
 
 def _submit_otp_via_page(page, code: str, log) -> dict:
     otp = str(code or "").strip()
     if not otp:
-        return {"ok": False, "status": 400, "url": page.url, "data": None, "text": "验证码为空"}
+        return {"ok": False, "status": 400, "url": page.url, "data": None, "text": "Verification code is empty"}
 
     filled = False
 
-    # 先尝试 6 格 OTP 输入框
+    # First try 6-digit OTP input fields
     try:
         digit_inputs = page.locator(
             "input[inputmode='numeric'], input[autocomplete='one-time-code'], input[type='tel'], input[type='number']"
@@ -2251,11 +2251,11 @@ def _submit_otp_via_page(page, code: str, log) -> dict:
                     break
             if done >= len(otp):
                 filled = True
-                log(f"验证码页已填写 {done} 位分格输入框")
+                log(f"Verification code page filled {done} digit segmented input fields")
     except Exception:
         pass
 
-    # 再尝试单输入框
+    # Then try single input field
     if not filled:
         otp_candidates = [
             page.get_by_label(re.compile(r"verification code|code|otp", re.IGNORECASE)),
@@ -2276,13 +2276,13 @@ def _submit_otp_via_page(page, code: str, log) -> dict:
                 final_value = str(target.input_value() or "").strip()
                 if final_value:
                     filled = True
-                    log("验证码页已填写单输入框")
+                    log("Verification code page filled single input field")
                     break
             except Exception:
                 continue
 
     if not filled:
-        return {"ok": False, "status": 0, "url": page.url, "data": None, "text": "验证码页未找到可填写输入框"}
+        return {"ok": False, "status": 0, "url": page.url, "data": None, "text": "Verification code page: no fillable input field found"}
 
     _browser_pause(page)
     submit_selector = _click_first(
@@ -2300,8 +2300,8 @@ def _submit_otp_via_page(page, code: str, log) -> dict:
         timeout=8,
     )
     if not submit_selector:
-        return {"ok": False, "status": 0, "url": page.url, "data": None, "text": "验证码页未找到 Continue 按钮"}
-    log(f"验证码页已点击继续按钮: {submit_selector}")
+        return {"ok": False, "status": 0, "url": page.url, "data": None, "text": "Verification code page Continue button not found"}
+    log(f"Verification code page clicked continue button: {submit_selector}")
 
     deadline = time.time() + 20
     last_url = page.url
@@ -2321,7 +2321,7 @@ def _submit_otp_via_page(page, code: str, log) -> dict:
         if error_text:
             return {"ok": False, "status": 400, "url": current_url, "data": None, "text": error_text}
         time.sleep(0.5)
-    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "验证码页提交后未跳转"}
+    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "Verification code page submit did not redirect"}
 
 
 def _submit_about_you_via_page(page, log) -> dict:
@@ -2331,7 +2331,7 @@ def _submit_about_you_via_page(page, log) -> dict:
     name = str(user_info.get("name") or "").strip()
     birthdate = str(user_info.get("birthdate") or "").strip()
     if not name or not birthdate:
-        raise RuntimeError("about_you 数据生成失败")
+        raise RuntimeError("about_you data generation failed")
     date_parts = birthdate.split("-")
     if len(date_parts) == 3:
         yyyy, mm, dd = date_parts
@@ -2340,7 +2340,7 @@ def _submit_about_you_via_page(page, log) -> dict:
     else:
         us_birthdate = birthdate
         cn_birthdate = birthdate.replace("-", "/")
-    log(f"about_you 表单: name={name}, birthdate={birthdate}, ui_birthdate={us_birthdate}, cn_birthdate={cn_birthdate}")
+    log(f"about_you form: name={name}, birthdate={birthdate}, ui_birthdate={us_birthdate}, cn_birthdate={cn_birthdate}")
 
     def _fill_locator(locator, value: str) -> bool:
         try:
@@ -2404,7 +2404,7 @@ def _submit_about_you_via_page(page, log) -> dict:
         return None
 
     def _fill_second_visible_input(values: list[str], excluded_visible_indices: set[int] | None = None) -> bool:
-        """兜底：about_you 卡片一般是 Full name + Birthday/Age 两个输入框。"""
+        """Fallback: about_you card typically has Full name + Birthday/Age two input fields."""
         try:
             locator = page.locator(
                 "input:visible:not([type='hidden']):not([disabled]):not([readonly])"
@@ -2448,7 +2448,7 @@ def _submit_about_you_via_page(page, log) -> dict:
             return False
 
     def _fill_birthday_selects(yyyy: str, mm: str, dd: str) -> bool:
-        """处理 Month/Day/Year 下拉样式的生日控件。"""
+        """Handle Month/Day/Year dropdown style birthday controls."""
         try:
             select_locator = page.locator("select:visible")
             count = select_locator.count()
@@ -2530,7 +2530,7 @@ def _submit_about_you_via_page(page, log) -> dict:
                 except Exception:
                     continue
 
-            # 下拉顺序兜底：month/day/year
+            # Dropdown order fallback: month/day/year
             if count >= 3:
                 try:
                     if not assigned["month"]:
@@ -2558,7 +2558,7 @@ def _submit_about_you_via_page(page, log) -> dict:
     visible_inputs = _collect_visible_text_inputs(page)
     if visible_inputs:
         log(
-            "about_you 可见输入框: "
+            "about_you visible inputs: "
             + " | ".join(
                 f"#{int(item.get('visibleIndex', 0))} {(_about_you_input_hints(item) or '-')[:80]}"
                 for item in visible_inputs[:4]
@@ -2577,38 +2577,38 @@ def _submit_about_you_via_page(page, log) -> dict:
 
     name_candidates = [
         page.get_by_label(re.compile(r"full\s*name", re.IGNORECASE)),
-        page.get_by_label(re.compile(r"全名|姓名", re.IGNORECASE)),
+        page.get_by_label(re.compile(r"full name", re.IGNORECASE)),
         page.get_by_role("textbox", name=re.compile(r"full\s*name|name", re.IGNORECASE)),
-        page.get_by_role("textbox", name=re.compile(r"全名|姓名", re.IGNORECASE)),
+        page.get_by_role("textbox", name=re.compile(r"full name", re.IGNORECASE)),
         page.locator("input[autocomplete='name']"),
         page.locator("input[name*='name' i]"),
         page.locator("input[id*='name' i]"),
-        page.locator("input[name*='姓名']"),
-        page.locator("input[id*='姓名']"),
+        page.locator("input[name*='name']"),
+        page.locator("input[id*='name']"),
         page.locator(
             "xpath=//*[contains(translate(normalize-space(string(.)),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'full name')]/following::input[1]"
         ),
-        page.locator("xpath=//*[contains(normalize-space(string(.)),'全名') or contains(normalize-space(string(.)),'姓名')]/following::input[1]"),
+        page.locator("xpath=//*[contains(translate(normalize-space(string(.)),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'full name')]/following::input[1]"),
     ]
     birthday_candidates = [
         page.get_by_label(re.compile(r"birthday|date of birth|birth", re.IGNORECASE)),
-        page.get_by_label(re.compile(r"生日|出生", re.IGNORECASE)),
+        page.get_by_label(re.compile(r"birthday|date of birth", re.IGNORECASE)),
         page.get_by_role("textbox", name=re.compile(r"birthday|date of birth|birth", re.IGNORECASE)),
-        page.get_by_role("textbox", name=re.compile(r"生日|出生", re.IGNORECASE)),
-        page.get_by_placeholder(re.compile(r"mm.?dd.?yyyy|yyyy.?mm.?dd|birthday|生日", re.IGNORECASE)),
+        page.get_by_role("textbox", name=re.compile(r"birthday|date of birth", re.IGNORECASE)),
+        page.get_by_placeholder(re.compile(r"mm.?dd.?yyyy|yyyy.?mm.?dd|birthday", re.IGNORECASE)),
         page.locator("input[name*='birth' i]"),
         page.locator("input[id*='birth' i]"),
         page.locator("input[placeholder*='MM' i]"),
         page.locator("input[placeholder*='DD' i]"),
         page.locator("input[placeholder*='YYYY' i]"),
-        page.locator("input[placeholder*='年']"),
-        page.locator("input[placeholder*='月']"),
-        page.locator("input[placeholder*='日']"),
+        page.locator("input[placeholder*='YYYY']"),
+        page.locator("input[placeholder*='MM']"),
+        page.locator("input[placeholder*='DD']"),
         page.locator("input[inputmode='numeric']"),
         page.locator(
             "xpath=//*[contains(translate(normalize-space(string(.)),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'birthday')]/following::input[1]"
         ),
-        page.locator("xpath=//*[contains(normalize-space(string(.)),'生日') or contains(normalize-space(string(.)),'出生')]/following::input[1]"),
+        page.locator("xpath=//*[contains(translate(normalize-space(string(.)),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'birthday')]/following::input[1]"),
         page.locator("input[type='date']"),
     ]
 
@@ -2622,17 +2622,17 @@ def _submit_about_you_via_page(page, log) -> dict:
 
     age_candidates = [
         page.get_by_label(re.compile(r"age", re.IGNORECASE)),
-        page.get_by_label(re.compile(r"年龄", re.IGNORECASE)),
+        page.get_by_label(re.compile(r"age", re.IGNORECASE)),
         page.get_by_role("textbox", name=re.compile(r"age", re.IGNORECASE)),
-        page.get_by_role("textbox", name=re.compile(r"年龄", re.IGNORECASE)),
+        page.get_by_role("textbox", name=re.compile(r"age", re.IGNORECASE)),
         page.locator("input[name*='age' i]"),
         page.locator("input[id*='age' i]"),
         page.locator("input[placeholder*='Age' i]"),
-        page.locator("input[placeholder*='年龄']"),
+        page.locator("input[placeholder*='Age']"),
         page.locator(
             "xpath=//*[contains(translate(normalize-space(string(.)),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'age')]/following::input[1]"
         ),
-        page.locator("xpath=//*[contains(normalize-space(string(.)),'年龄')]/following::input[1]"),
+        page.locator("xpath=//*[contains(translate(normalize-space(string(.)),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'age')]/following::input[1]"),
     ]
 
     fill_result = {"name": False, "birthdate": False, "age": False, "month": False, "day": False, "year": False}
@@ -2658,9 +2658,9 @@ def _submit_about_you_via_page(page, log) -> dict:
                 .map((n) => String(n.textContent || '').trim().toLowerCase())
                 .filter(Boolean);
               const allText = labels.concat(placeholders).concat(headings);
-              const hasAge = allText.some((t) => t === 'age' || t.includes('how old') || t.includes('年龄'));
+              const hasAge = allText.some((t) => t === 'age' || t.includes('how old'));
               const hasBirthday = allText.some((t) =>
-                t.includes('birthday') || t.includes('date of birth') || t.includes('birth') || t.includes('生日') || t.includes('出生')
+                t.includes('birthday') || t.includes('date of birth') || t.includes('birth')
               );
               return { labels, placeholders, headings, hasAge, hasBirthday };
             }
@@ -2684,13 +2684,13 @@ def _submit_about_you_via_page(page, log) -> dict:
         about_mode = "age"
     else:
         about_mode = "birthday"
-    log(f"about_you 页面模式: {about_mode} labels={mode_probe.get('labels', [])[:4]}")
+    log(f"about_you page mode: {about_mode} labels={mode_probe.get('labels', [])[:4]}")
     direct_name_selector = _resolve_visible_input_selector(
         [
             'input[name="name"]',
             'input[name="full_name"]',
             'input[autocomplete="name"]',
-            'input[placeholder*="全名"]',
+            'input[placeholder*="name" i]',
             'input[placeholder*="name" i]',
             'input[id*="name" i]:not([type="hidden"])',
         ]
@@ -2700,7 +2700,7 @@ def _submit_about_you_via_page(page, log) -> dict:
             'input[name="age"]',
             'input[placeholder="Age"]',
             'input[placeholder="age"]',
-            'input[placeholder*="年龄"]',
+            'input[placeholder*="Age"]',
             'input[id*="age" i]',
         ]
     )
@@ -2708,20 +2708,20 @@ def _submit_about_you_via_page(page, log) -> dict:
         name_entry = ordered_visible_entries[0]
         age_entry = ordered_visible_entries[1]
         log(
-            f"about_you age 输入框映射: name=#{int(name_entry.get('visibleIndex', 0))}, "
+            f"about_you age input mapping: name=#{int(name_entry.get('visibleIndex', 0))}, "
             f"age=#{int(age_entry.get('visibleIndex', 0))}"
         )
     if about_mode == "age":
         log(
-            "about_you age 直接定位: "
+            "about_you age direct targeting: "
             f"name={direct_name_selector or '-'}, age={direct_age_selector or '-'}"
         )
 
     def _fill_segmented_date(mm: str, dd: str, yyyy: str) -> bool:
-        """处理 MM / DD / YYYY 分段日期输入框（React DateField 样式）。
-        特征：一个 Birthday label 下有多个小 input 或 div[data-type] 段。"""
+        """Handle MM / DD / YYYY segmented date input fields (React DateField style).
+        Characteristic: multiple small inputs or div[data-type] segments under a Birthday label."""
         try:
-            # 方式1: div[data-type] 段 (React Aria DateField)
+            # Method 1: div[data-type] segment (React Aria DateField)
             month_seg = page.locator('div[data-type="month"], input[data-type="month"]')
             day_seg = page.locator('div[data-type="day"], input[data-type="day"]')
             year_seg = page.locator('div[data-type="year"], input[data-type="year"]')
@@ -2736,8 +2736,8 @@ def _submit_about_you_via_page(page, log) -> dict:
                 page.keyboard.type(yyyy, delay=50)
                 return True
 
-            # 方式2: 单个 date input 里有 MM/DD/YYYY 占位符
-            # 点击输入框，然后按顺序输入 MM DD YYYY（Tab 切换段）
+            # Method 2: single date input with MM/DD/YYYY placeholder
+            # Click input, then type MM DD YYYY in order (Tab to switch segments)
             date_input = page.locator("input[placeholder*='MM'], input[placeholder*='mm'], input[type='date']")
             if date_input.count() > 0:
                 date_input.first.click(force=True)
@@ -2747,7 +2747,7 @@ def _submit_about_you_via_page(page, log) -> dict:
                 page.keyboard.type(yyyy, delay=50)
                 return True
 
-            # 方式3: Birthday label 下的第二个可见 input，直接点击后按数字键输入
+            # Method 3: second visible input under Birthday label, click and type digits
             birthday_input = page.get_by_label(re.compile(r"birthday|birth", re.IGNORECASE))
             if birthday_input.count() > 0:
                 birthday_input.first.click(force=True)
@@ -2757,28 +2757,28 @@ def _submit_about_you_via_page(page, log) -> dict:
                 page.keyboard.type(yyyy, delay=50)
                 return True
 
-            # 方式4: 第二个可见 input（name 是第一个）
+            # Method 4: second visible input (name is the first)
             inputs = page.locator("input:visible:not([type='hidden']):not([disabled])")
             if inputs.count() >= 2:
                 target = inputs.nth(1)
                 target.click(force=True)
                 time.sleep(0.3)
-                # 先清空
+                # First clear
                 page.keyboard.press("Control+a")
                 page.keyboard.press("Backspace")
                 time.sleep(0.1)
-                # 输入 MM，Tab 到 DD，Tab 到 YYYY
+                # Type MM, Tab to DD, Tab to YYYY
                 page.keyboard.type(mm, delay=80)
                 time.sleep(0.3)
                 page.keyboard.type(dd, delay=80)
                 time.sleep(0.3)
                 page.keyboard.type(yyyy, delay=80)
                 time.sleep(0.3)
-                # 验证是否填入了正确的值
+                # Verify if correct value was filled
                 val = str(target.input_value() or "").strip()
                 if val and val != target.get_attribute("placeholder"):
                     return True
-                # 如果直接输入不行，试 Tab 切换
+                # If direct input does not work, try Tab switching
                 target.click(force=True)
                 time.sleep(0.2)
                 page.keyboard.press("Control+a")
@@ -2814,7 +2814,7 @@ def _submit_about_you_via_page(page, log) -> dict:
                     if _fill_locator(candidate, str(age_years)):
                         fill_result["age"] = True
                         break
-        # fallback: 直接找 placeholder="Age" 的输入框
+        # fallback: directly find input with placeholder="Age"
         if not fill_result.get("age") and age_years is not None and len(ordered_visible_entries) < 2:
             try:
                 age_input = page.locator("input[placeholder='Age'], input[placeholder='age']")
@@ -2835,11 +2835,11 @@ def _submit_about_you_via_page(page, log) -> dict:
         if len(date_parts) == 3 and _sync_hidden_birthday_input(page, f"{yyyy}-{mm}-{dd}", log):
             fill_result["birthdate"] = True
     elif about_mode == "birthday" or about_mode == "birthday_text":
-        # 先尝试分段日期输入（MM / DD / YYYY 格式的 DateField）
+        # First try segmented date input (MM / DD / YYYY DateField format)
         if len(date_parts) == 3 and _fill_segmented_date(mm, dd, yyyy):
             fill_result["birthdate"] = True
-            log("about_you 使用分段日期输入成功")
-        # 再尝试普通文本输入
+            log("about_you segmented date input succeeded")
+        # Then try plain text input
         if not fill_result.get("birthdate"):
             for candidate in birthday_candidates:
                 if _fill_locator(candidate, cn_birthdate):
@@ -2862,15 +2862,15 @@ def _submit_about_you_via_page(page, log) -> dict:
             if _fill_second_visible_input(fallback_values):
                 fill_result["birthdate"] = True
 
-    log(f"about_you 填写结果: {fill_result}")
+    log(f"about_you fill result: {fill_result}")
     if not fill_result.get("name"):
-        raise RuntimeError("about_you 未成功填写 Full name")
+        raise RuntimeError("about_you failed to fill Full name")
     if not (
         fill_result.get("birthdate")
         or fill_result.get("age")
         or (fill_result.get("month") and fill_result.get("day") and fill_result.get("year"))
     ):
-        raise RuntimeError("about_you 未成功填写 Birthday/Age")
+        raise RuntimeError("about_you failed to fill Birthday/Age")
     _browser_pause(page)
 
     submit_selector = _click_first(
@@ -2888,8 +2888,8 @@ def _submit_about_you_via_page(page, log) -> dict:
         timeout=8,
     )
     if not submit_selector:
-        raise RuntimeError("about_you 未找到提交按钮")
-    log(f"about_you 已点击继续按钮: {submit_selector}")
+        raise RuntimeError("about_you submit button not found")
+    log(f"about_you clicked continue button: {submit_selector}")
 
     deadline = time.time() + 20
     retried_generic_validation = False
@@ -2933,7 +2933,7 @@ def _submit_about_you_via_page(page, log) -> dict:
                 and ("doesn't look right" in normalized_error or "try again" in normalized_error)
             ):
                 retried_generic_validation = True
-                log("about_you age 模式提交被拒，重新同步 Full name/Age/hidden birthday 后重试一次...")
+                log("about_you age mode submit rejected, re-syncing Full name/Age/hidden birthday and retrying...")
                 if direct_name_selector and _fill_input_like_user(page, direct_name_selector, name):
                     fill_result["name"] = True
                 elif _fill_visible_input_entry(name_entry, name):
@@ -2971,13 +2971,13 @@ def _submit_about_you_via_page(page, log) -> dict:
                     timeout=5,
                 )
                 if retry_submit_selector:
-                    log(f"about_you 重试提交按钮: {retry_submit_selector}")
+                    log(f"about_you retry submit button: {retry_submit_selector}")
                     time.sleep(0.5)
                     continue
             return {"ok": False, "status": 400, "url": current_url, "data": None, "text": error_text}
         time.sleep(0.5)
     _dump_debug(page, "chatgpt_about_you_fail")
-    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "about_you 提交后未跳转"}
+    return {"ok": False, "status": 0, "url": last_url, "data": None, "text": "about_you submit did not redirect"}
 
 
 def _browser_registration_flow(page, email: str, password: str, otp_callback, phone_callback, log) -> dict:
@@ -2991,15 +2991,15 @@ def _browser_registration_flow(page, email: str, password: str, otp_callback, ph
     try:
         state = _start_browser_signup_via_page(page, email, log)
     except Exception as exc:
-        log(f"页面驱动注册入口失败，回退 ChatGPT authorize 入口: {exc}")
+        log(f"Page-driven registration entry failed, falling back to ChatGPT authorize entry: {exc}")
         state = _start_browser_signup_via_authorize(page, email, device_id, log)
     auth_cookies = _get_cookies(page)
     log(
-        "授权态 cookies: "
+        "Authorization cookies: "
         f"login_session={'yes' if auth_cookies.get('login_session') else 'no'}, "
         f"oai-did={'yes' if auth_cookies.get('oai-did') else 'no'}"
     )
-    log(f"注册状态起点: page={state.get('page_type') or '-'} url={(state.get('current_url') or '')[:100]}")
+    log(f"Registration state starting point: page={state.get('page_type') or '-'} url={(state.get('current_url') or '')[:100]}")
     register_submitted = False
     seen_states: dict[str, int] = {}
 
@@ -3014,11 +3014,11 @@ def _browser_registration_flow(page, email: str, password: str, otp_callback, ph
         )
         seen_states[signature] = seen_states.get(signature, 0) + 1
         log(
-            f"注册状态推进: step={step+1} page={state.get('page_type') or '-'} "
+            f"Registration state advancing: step={step+1} page={state.get('page_type') or '-'} "
             f"next={str(state.get('continue_url') or '')[:60]} seen={seen_states[signature]}"
         )
         if seen_states[signature] > 2:
-            raise RuntimeError(f"注册状态卡住: page={state.get('page_type') or '-'}")
+            raise RuntimeError(f"Registration state stuck: page={state.get('page_type') or '-'}")
 
         if _is_registration_complete(state):
             _handle_post_signup_onboarding(page, log)
@@ -3026,18 +3026,18 @@ def _browser_registration_flow(page, email: str, password: str, otp_callback, ph
 
         if _is_password_registration(state):
             if register_submitted:
-                raise RuntimeError("重复进入密码注册阶段")
-            log("提交注册密码...")
+                raise RuntimeError("Re-entered password registration phase")
+            log("Submitting registration password...")
             pre_cookies = _get_cookies(page)
             log(
-                "密码阶段 cookies: "
+                "Password phase cookies: "
                 f"login_session={'yes' if pre_cookies.get('login_session') else 'no'}, "
                 f"oai-client-auth-session={'yes' if pre_cookies.get('oai-client-auth-session') else 'no'}"
             )
             reg_resp = _submit_password_via_page(page, password, log)
-            log(f"密码页提交状态: {reg_resp.get('status', 0)}")
+            log(f"Password page submit status: {reg_resp.get('status', 0)}")
             if not reg_resp.get("ok"):
-                raise RuntimeError(f"密码页提交失败: {(reg_resp.get('text') or '')[:300]}")
+                raise RuntimeError(f"Password page submit failed: {(reg_resp.get('text') or '')[:300]}")
             register_submitted = True
             state = _extract_flow_state(reg_resp.get("data"), reg_resp.get("url", page.url))
             if not state.get("page_type") or _is_password_registration(state):
@@ -3048,11 +3048,11 @@ def _browser_registration_flow(page, email: str, password: str, otp_callback, ph
             if _recover_signup_password_page(page, log):
                 state = _derive_registration_state_from_page(page)
                 continue
-            log("注册流程落到已有账号登录密码页，按登录流程继续认证...")
+            log("Registration flow fell into existing account login password page, continuing with login authentication...")
             login_resp = _submit_oauth_password_direct(page, password, log)
-            log(f"登录密码页提交状态: {login_resp.get('status', 0)}")
+            log(f"Login password page submit status: {login_resp.get('status', 0)}")
             if not login_resp.get("ok"):
-                raise RuntimeError(f"登录密码页提交失败: {(login_resp.get('text') or '')[:300]}")
+                raise RuntimeError(f"Login password page submit failed: {(login_resp.get('text') or '')[:300]}")
             state = _extract_flow_state(login_resp.get("data"), login_resp.get("url", page.url))
             if not state.get("page_type"):
                 state = _derive_registration_state_from_page(page)
@@ -3060,40 +3060,40 @@ def _browser_registration_flow(page, email: str, password: str, otp_callback, ph
 
         if _is_email_otp(state):
             if not otp_callback:
-                raise RuntimeError("ChatGPT 注册需要邮箱验证码但未提供 otp_callback")
-            log("等待 ChatGPT 验证码")
+                raise RuntimeError("ChatGPT registration requires email verification code but no otp_callback provided")
+            log("Waiting for ChatGPT verification code")
             code = otp_callback()
             if not code:
-                raise RuntimeError("未获取到验证码")
+                raise RuntimeError("Failed to get verification code")
             otp_resp = _submit_otp_via_page(page, code, log)
-            log(f"验证码页提交状态: {otp_resp.get('status', 0)}")
+            log(f"Verification code page submit status: {otp_resp.get('status', 0)}")
             if not otp_resp.get("ok"):
-                raise RuntimeError(f"验证码校验失败: {(otp_resp.get('text') or '')[:300]}")
+                raise RuntimeError(f"Verification code validation failed: {(otp_resp.get('text') or '')[:300]}")
             state = _extract_flow_state(otp_resp.get("data"), otp_resp.get("url", page.url))
             if not state.get("page_type"):
                 state = _derive_registration_state_from_page(page)
             continue
 
         if _is_about_you(state):
-            log("提交 about_you 信息...")
+            log("Submitting about_you info...")
             target_url = _normalize_url(
                 str(state.get("current_url") or state.get("continue_url") or f"{OPENAI_AUTH}/about-you"),
                 OPENAI_AUTH,
             )
             if "about-you" not in str(page.url):
-                log(f"跳转到 about_you 页面: {target_url[:120]}")
+                log(f"Navigating to about_you page: {target_url[:120]}")
                 page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
             about_resp = _submit_about_you_via_page(page, log)
-            log(f"about_you 提交状态: {about_resp.get('status', 0)}")
+            log(f"about_you submit status: {about_resp.get('status', 0)}")
             if not about_resp.get("ok"):
-                raise RuntimeError(f"about_you 提交失败: {(about_resp.get('text') or '')[:300]}")
+                raise RuntimeError(f"about_you submit failed: {(about_resp.get('text') or '')[:300]}")
             state = _extract_flow_state(about_resp.get("data"), about_resp.get("url", page.url))
             if not state.get("page_type"):
                 state = _derive_registration_state_from_page(page)
             if _is_add_phone(state):
                 if not phone_callback:
                     return state
-                log("about_you 后进入 add_phone，尝试短信验证...")
+                log("Entered add_phone after about_you, trying SMS verification...")
                 state = _handle_add_phone_challenge(
                     page,
                     phone_callback,
@@ -3107,7 +3107,7 @@ def _browser_registration_flow(page, email: str, password: str, otp_callback, ph
         if _is_add_phone(state):
             if not phone_callback:
                 return state
-            log("注册流程进入 add_phone，尝试短信验证...")
+            log("Registration flow entered add_phone, trying SMS verification...")
             state = _handle_add_phone_challenge(
                 page,
                 phone_callback,
@@ -3121,14 +3121,14 @@ def _browser_registration_flow(page, email: str, password: str, otp_callback, ph
         if _requires_registration_navigation(state):
             target_url = _normalize_url(str(state.get("continue_url") or state.get("current_url") or ""), OPENAI_AUTH)
             if not target_url:
-                raise RuntimeError("缺少可跟随的 continue_url")
+                raise RuntimeError("Missing followable continue_url")
             page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
             state = _extract_flow_state(None, page.url)
             continue
 
-        raise RuntimeError(f"未支持的注册状态: page={state.get('page_type') or '-'}")
+        raise RuntimeError(f"Unsupported registration state: page={state.get('page_type') or '-'}")
 
-    raise RuntimeError("注册状态机超出最大步数")
+    raise RuntimeError("Registration state machine exceeded maximum steps")
 
 
 class ChatGPTBrowserRegister:
@@ -3156,7 +3156,7 @@ class ChatGPTBrowserRegister:
 
         with Camoufox(**launch_opts) as browser:
             page = browser.new_page()
-            self.log("启动浏览器上下文注册状态机")
+            self.log("Starting browser context registration state machine")
             final_state = _browser_registration_flow(
                 page,
                 email,
@@ -3165,14 +3165,14 @@ class ChatGPTBrowserRegister:
                 self.phone_callback,
                 self.log,
             )
-            self.log(f"注册流程完成: page={final_state.get('page_type') or '-'}")
+            self.log(f"Registration flow completed: page={final_state.get('page_type') or '-'}")
 
-            # 获取 session token 和 cookies
+            # Get session token and cookies
             cookies_dict = _get_cookies(page)
 
-            # ═══ 通过 Codex CLI OAuth 获取正确的 token ═══
-            # 用干净的浏览器上下文做 OAuth（注册时的 cookie 会干扰 OAuth 流程）
-            self.log("执行 Codex CLI OAuth 流程获取 token...")
+            # ═══ Get correct token via Codex CLI OAuth ═══
+            # Do OAuth with clean browser context (registration cookies can interfere with OAuth flow)
+            self.log("Executing Codex CLI OAuth flow to get token...")
             try:
                 page.context.clear_cookies()
             except Exception:
@@ -3192,8 +3192,8 @@ class ChatGPTBrowserRegister:
             cookie_str = "; ".join([f"{k}={v}" for k, v in cookies_dict.items()])
 
             if codex_result:
-                self.log(f"Codex OAuth 成功: account_id={codex_result.get('account_id','')}")
-                self.log(f"注册成功: {email}")
+                self.log(f"Codex OAuth succeeded: account_id={codex_result.get('account_id','')}")
+                self.log(f"Registration succeeded: {email}")
                 return {
                     "email": email, "password": password,
                     "account_id": codex_result.get("account_id", ""),
@@ -3205,12 +3205,12 @@ class ChatGPTBrowserRegister:
                     "profile": {},
                 }
 
-            self.log("Codex OAuth 失败，尝试全新浏览器重试...")
+            self.log("Codex OAuth failed, trying fresh browser retry...")
 
-        # 全新浏览器 OAuth 重试（在 with Camoufox 外面开新的）
+        # Fresh browser OAuth retry (open new one outside with Camoufox)
         codex_result = self._retry_oauth_fresh_browser(email, password)
         if codex_result:
-            self.log(f"全新浏览器 OAuth 成功: account_id={codex_result.get('account_id','')}")
+            self.log(f"Fresh browser OAuth succeeded: account_id={codex_result.get('account_id','')}")
             return {
                 "email": email, "password": password,
                 "account_id": codex_result.get("account_id", ""),
@@ -3221,10 +3221,10 @@ class ChatGPTBrowserRegister:
                 "cookies": "", "profile": {},
             }
 
-        raise RuntimeError("ChatGPT 注册未完成完整 OAuth callback，已拒绝回退到 session/access_token 半成品结果")
+        raise RuntimeError("ChatGPT registration did not complete full OAuth callback, refused to fall back to session/access_token partial results")
 
     def _retry_oauth_fresh_browser(self, email, password):
-        """在全新浏览器 context 里做 Codex OAuth（绕过 add_phone session）。"""
+        """Do Codex OAuth in a fresh browser context (bypass add_phone session)."""
         proxy = _build_proxy_config(self.proxy)
         launch_opts = {"headless": self.headless}
         if proxy:
@@ -3232,12 +3232,12 @@ class ChatGPTBrowserRegister:
         try:
             with Camoufox(**launch_opts) as browser:
                 page = browser.new_page()
-                self.log("  全新浏览器 OAuth 开始...")
+                self.log("  Fresh browser OAuth starting...")
                 result = _do_codex_oauth(
                     page, {}, email, password,
                     self.otp_callback, self.phone_callback, self.proxy, self.log,
                 )
                 return result
         except Exception as e:
-            self.log(f"  全新浏览器 OAuth 异常: {e}")
+            self.log(f"  Fresh browser OAuth exception: {e}")
             return None

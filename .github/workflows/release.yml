@@ -3,7 +3,7 @@ name: Build & Release
 on:
   push:
     tags:
-      - 'v*'  # 推送 v1.0.0 这样的 tag 时触发
+      - 'v*'  # Triggered when pushing a tag like v1.0.0
 
 jobs:
   build-mac:

@@ -1,15 +1,15 @@
-"""Kiro (AWS Builder ID) 浏览器注册流程（Camoufox）。
+"""Kiro (AWS Builder ID) browser registration flow (Camoufox).
 
-注册流程：
-  1. 打开 app.kiro.dev/signin
-  2. 点击 "AWS Builder ID" 选项
-  3. 跳转到 us-east-1.signin.aws → profile.aws.amazon.com
-  4. AWS Builder ID 注册 SPA：
-     a. enter-email 步：确认/填写邮箱 → Continue
-     b. enter-name 步：填写姓名 → Continue
-     c. verify-email 步：填写 OTP → Continue
-     d. create-password 步：设置密码 → Continue
-  5. 跳回 app.kiro.dev，从 localStorage 提取 Cognito tokens
+Registration flow:
+  1. Open app.kiro.dev/signin
+  2. Click "AWS Builder ID" option
+  3. Redirect to us-east-1.signin.aws -> profile.aws.amazon.com
+  4. AWS Builder ID registration SPA:
+     a. enter-email step: confirm/fill email -> Continue
+     b. enter-name step: fill name -> Continue
+     c. verify-email step: fill OTP -> Continue
+     d. create-password step: set password -> Continue
+  5. Redirect back to app.kiro.dev, extract Cognito tokens from localStorage
 """
 import random
 import string
@@ -48,7 +48,7 @@ def _wait_for_url(page, substring: str, timeout: int = 60) -> bool:
 
 
 def _js_click_by_text(page, *texts) -> bool:
-    """用 JS 找到 textContent 精确匹配的最小叶节点并点击。"""
+    """Find and click the smallest leaf node with exact textContent match using JS."""
     for text in texts:
         try:
             clicked = page.evaluate(f"""
@@ -74,10 +74,10 @@ def _js_click_by_text(page, *texts) -> bool:
 
 
 def _click_submit_button(page, timeout: int = 8) -> bool:
-    """点击 submit 按钮（AWS 页面用 button[type=submit]）。"""
+    """Click submit button (AWS pages use button[type=submit])."""
     deadline = time.time() + timeout
     while time.time() < deadline:
-        # 1. 优先 Playwright locator text 精确匹配
+        # 1. Prefer Playwright locator text exact match
         for text in ["Continue", "Next", "Verify", "Create account", "Sign in", "Submit"]:
             try:
                 el = page.locator(f'text="{text}"').last
@@ -118,7 +118,7 @@ def _fill_input_wait(page, selectors: list, value: str, timeout: int = 20) -> bo
 
 
 def _get_kiro_tokens(page, timeout: int = 30) -> dict:
-    """从 localStorage 提取 Cognito accessToken / refreshToken。"""
+    """Extract Cognito accessToken / refreshToken from localStorage."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -169,15 +169,15 @@ class KiroBrowserRegister:
         self.log = log_fn
 
     def _handle_aws_profile_spa(self, page, email: str, password: str) -> None:
-        """处理 profile.aws.amazon.com 上的多步注册 SPA。
-        
-        步骤对应 URL hash：
-          #/signup/enter-email  → 填/确认邮箱 → Continue
-          #/signup/enter-name   → 填姓名 → Continue
-          #/signup/verify-email → 填 OTP → Continue
-          #/signup/create-password → 填密码 → Continue (可选)
+        """Handle the multi-step registration SPA on profile.aws.amazon.com.
+
+        Steps correspond to URL hash:
+          #/signup/enter-email  -> fill/confirm email -> Continue
+          #/signup/enter-name   -> fill name -> Continue
+          #/signup/verify-email -> fill OTP -> Continue
+          #/signup/create-password -> fill password -> Continue (optional)
         """
-        deadline = time.time() + 300  # 最多等 5 分钟完成整个流程
+        deadline = time.time() + 300  # Wait up to 5 minutes for the entire flow
 
         email_selectors = [
             'input[placeholder*="username@example.com"]',
@@ -213,35 +213,35 @@ class KiroBrowserRegister:
             url = page.url
             hash_part = url.split("#")[-1] if "#" in url else ""
 
-            # 跳回了 kiro.dev -> 完成
+            # Redirected back to kiro.dev -> done
             if "kiro.dev" in url and "profile.aws" not in url and "signin.aws" not in url:
                 return
 
-            # 检测 hash 是否卡住（同一 hash 停留过久且已处理过）→ 允许重试
+            # Detect if hash is stuck (same hash for too long and already processed) -> allow retry
             if hash_part == prev_hash:
                 if hash_stuck_since is None:
                     hash_stuck_since = time.time()
                 elif time.time() - hash_stuck_since > 20:
                     step_key = hash_part.split("/")[-1]
                     if step_key in handled_steps:
-                        self.log(f"⚠️ 步骤 {step_key} 卡住 20 秒，移除标记以重试")
+                        self.log(f"Warning: step {step_key} stuck for 20 seconds, removing marker to retry")
                         handled_steps.discard(step_key)
                         hash_stuck_since = None
             else:
                 prev_hash = hash_part
                 hash_stuck_since = None
 
-            # --- enter-email 步（邮箱+姓名在同一页）---
+            # --- enter-email step (email + name on same page) ---
             if "enter-email" in hash_part and "enter-email" not in handled_steps:
                 enter_email_retries += 1
                 if enter_email_retries > 5:
                     raise RuntimeError(
-                        f"AWS enter-email 步骤重试超 5 次仍无法前进 — "
-                        f"邮箱域名可能被 AWS 拒绝 (url={page.url})"
+                        f"AWS enter-email step retried over 5 times and still cannot proceed -- "
+                        f"email domain may be rejected by AWS (url={page.url})"
                     )
-                self.log(f"AWS 步骤: 确认邮箱 + 填写姓名 (第{enter_email_retries}次)")
-                time.sleep(1.5)  # 给 SPA 渲染时间
-                # 填邮箱（若为空）
+                self.log(f"AWS step: confirm email + fill name (attempt #{enter_email_retries})")
+                time.sleep(1.5)  # Give SPA time to render
+                # Fill email (if empty)
                 for sel in email_selectors:
                     try:
                         el = page.query_selector(sel)
@@ -252,7 +252,7 @@ class KiroBrowserRegister:
                             break
                     except Exception:
                         pass
-                # 等待姓名输入框出现（最多 15 秒）
+                # Wait for name input to appear (up to 15 seconds)
                 name = _random_name()
                 name_filled = False
                 name_deadline = time.time() + 15
@@ -265,9 +265,9 @@ class KiroBrowserRegister:
                                 time.sleep(0.2)
                                 el.fill(name)
                                 time.sleep(0.2)
-                                # 确认填入成功
+                                # Confirm fill succeeded
                                 if el.input_value():
-                                    self.log(f"填写姓名: {name}")
+                                    self.log(f"Filled name: {name}")
                                     name_filled = True
                                     break
                         except Exception:
@@ -276,7 +276,7 @@ class KiroBrowserRegister:
                         time.sleep(0.5)
 
                 if not name_filled:
-                    self.log("⚠️ 未能填写姓名，尝试 JS 方式")
+                    self.log("Warning: failed to fill name, trying JS method")
                     try:
                         page.evaluate(f"""
                         () => {{
@@ -301,24 +301,24 @@ class KiroBrowserRegister:
                 time.sleep(0.5)
                 _click_submit_button(page, timeout=8)
                 handled_steps.add("enter-email")
-                # 等待 hash 变化（最多 12 秒），若未变则清除标记允许重试
+                # Wait for hash change (up to 12 seconds), if unchanged clear marker to allow retry
                 start_wait = time.time()
                 while time.time() - start_wait < 12:
                     time.sleep(0.5)
                     new_url = page.url
                     new_hash = new_url.split("#")[-1] if "#" in new_url else ""
                     if new_hash != hash_part:
-                        break  # hash 变了，进入下一步
+                        break  # Hash changed, proceed to next step
                 else:
-                    # 12 秒后 hash 未变，提交可能失败，允许重试
-                    self.log("⚠️ enter-email 提交后 URL 未变化，将重试")
+                    # Hash unchanged after 12 seconds, submission may have failed, allow retry
+                    self.log("Warning: URL unchanged after enter-email submit, will retry")
                     handled_steps.discard("enter-email")
                     hash_stuck_since = time.time()
                 continue
 
-            # --- enter-name 步 ---
+            # --- enter-name step ---
             if "enter-name" in hash_part and "enter-name" not in handled_steps:
-                self.log("AWS 步骤: 填写姓名")
+                self.log("AWS step: fill name")
                 time.sleep(1.5)
                 name = _random_name()
                 name_filled = False
@@ -332,7 +332,7 @@ class KiroBrowserRegister:
                                 time.sleep(0.2)
                                 el.fill(name)
                                 if el.input_value():
-                                    self.log(f"填写姓名: {name}")
+                                    self.log(f"Filled name: {name}")
                                     name_filled = True
                                     break
                         except Exception:
@@ -344,10 +344,10 @@ class KiroBrowserRegister:
                 time.sleep(2)
                 continue
 
-            # --- verify-email 步 ---
+            # --- verify-email step ---
             if "verify-email" in hash_part and "verify-email" not in handled_steps:
-                self.log("AWS 步骤: 填写验证码")
-                # 等待 OTP 输入框出现
+                self.log("AWS step: fill verification code")
+                # Wait for OTP input to appear
                 otp_el = None
                 otp_deadline = time.time() + 30
                 while time.time() < otp_deadline:
@@ -364,15 +364,15 @@ class KiroBrowserRegister:
                     time.sleep(1)
 
                 if not otp_el:
-                    raise RuntimeError(f"未出现验证码输入框: {page.url}")
+                    raise RuntimeError(f"Verification code input not found: {page.url}")
 
                 if not self.otp_callback:
-                    raise RuntimeError("Kiro 注册需要邮箱验证码但未提供 otp_callback")
+                    raise RuntimeError("Kiro registration requires email verification code but otp_callback not provided")
 
                 code = self.otp_callback()
                 if not code:
-                    raise RuntimeError("未获取到邮箱验证码")
-                self.log(f"填写验证码: {code}")
+                    raise RuntimeError("Failed to get email verification code")
+                self.log(f"Filled verification code: {code}")
                 otp_el.click()
                 for digit in str(code).strip():
                     page.keyboard.press(digit)
@@ -383,9 +383,9 @@ class KiroBrowserRegister:
                 time.sleep(2)
                 continue
 
-            # --- create-password 步 ---
+            # --- create-password step ---
             if "create-password" in hash_part and "create-password" not in handled_steps:
-                self.log("AWS 步骤: 设置密码")
+                self.log("AWS step: set password")
                 time.sleep(1)
                 pwd_fields = []
                 for sel in pwd_selectors:
@@ -408,14 +408,14 @@ class KiroBrowserRegister:
                 time.sleep(2)
                 continue
 
-            # 没有 hash 的情况：可能在中间跳转页，等待
+            # No hash case: may be on an intermediate redirect page, wait
             time.sleep(1)
 
-        raise RuntimeError(f"AWS Builder ID 注册未在规定时间内完成: {page.url}")
+        raise RuntimeError(f"AWS Builder ID registration did not complete within the time limit: {page.url}")
 
     def run(self, email: str, password: str) -> dict:
         if not self.otp_callback:
-            raise RuntimeError("Kiro 注册需要邮箱验证码但未提供 otp_callback")
+            raise RuntimeError("Kiro registration requires email verification code but otp_callback not provided")
 
         if not password:
             password = (
@@ -433,24 +433,24 @@ class KiroBrowserRegister:
         with Camoufox(**launch_opts) as browser:
             page = browser.new_page()
 
-            # 1. 打开 Kiro 登录页
-            self.log("打开 Kiro 登录页")
+            # 1. Open Kiro login page
+            self.log("Opening Kiro login page")
             page.goto(f"{KIRO_URL}/signin", wait_until="domcontentloaded", timeout=30000)
             time.sleep(2)
 
-            # 2. 点击 AWS Builder ID 选项
-            self.log("选择 AWS Builder ID 登录方式")
+            # 2. Click AWS Builder ID option
+            self.log("Selecting AWS Builder ID login method")
             builder_clicked = False
             deadline_builder = time.time() + 15
             while time.time() < deadline_builder and not builder_clicked:
-                # Playwright locator 文本精确匹配
+                # Playwright locator text exact match
                 for text in ["Builder ID", "AWS Builder ID"]:
                     try:
                         el = page.locator(f'text="{text}"').last
                         if el.is_visible():
                             el.click()
                             builder_clicked = True
-                            self.log(f"点击了 {text}")
+                            self.log(f"Clicked {text}")
                             break
                     except Exception:
                         pass
@@ -458,27 +458,27 @@ class KiroBrowserRegister:
                     # JS walker fallback
                     builder_clicked = _js_click_by_text(page, "Builder ID", "AWS Builder ID")
                     if builder_clicked:
-                        self.log("点击了 Builder ID (JS)")
+                        self.log("Clicked Builder ID (JS)")
                 if not builder_clicked:
                     time.sleep(0.5)
 
             time.sleep(2)
 
-            # 3. 可能有二级 "Sign in" 箭头（Kiro 的选项卡 UI）
+            # 3. There may be a secondary "Sign in" arrow (Kiro tab UI)
             _click_submit_button(page, timeout=5)
             time.sleep(2)
 
-            # 4. 等待进入 AWS 域名
-            self.log("等待 AWS 登录页...")
+            # 4. Wait to enter AWS domain
+            self.log("Waiting for AWS login page...")
             if not _wait_for_url(page, AWS_SIGNIN_DOMAIN, timeout=30):
                 if AWS_PROFILE_DOMAIN not in page.url:
-                    raise RuntimeError(f"未跳转到 AWS 登录页: {page.url}")
+                    raise RuntimeError(f"Did not redirect to AWS login page: {page.url}")
 
             time.sleep(2)
 
-            # 5. 如果落在 signin.aws（已有账号登录页），先填邮箱提交
+            # 5. If landed on signin.aws (existing account login page), fill email and submit first
             if AWS_SIGNIN_DOMAIN in page.url:
-                self.log(f"填写邮箱: {email}")
+                self.log(f"Filling email: {email}")
                 email_selectors = [
                     'input[placeholder*="username@example.com"]',
                     'input[type="email"]',
@@ -486,14 +486,14 @@ class KiroBrowserRegister:
                     'input[name="username"]',
                 ]
                 if not _fill_input_wait(page, email_selectors, email, timeout=15):
-                    raise RuntimeError(f"未找到邮箱输入框: {page.url}")
+                    raise RuntimeError(f"Email input not found: {page.url}")
                 time.sleep(0.5)
                 _click_submit_button(page, timeout=8)
                 time.sleep(3)
 
-            # 6. 等待进入 profile.aws.amazon.com（新账号注册流程）
-            # AWS 重定向可能需要较长时间，等待最多 60 秒
-            self.log("等待进入 AWS 注册流程...")
+            # 6. Wait to enter profile.aws.amazon.com (new account registration flow)
+            # AWS redirect may take a long time, wait up to 60 seconds
+            self.log("Waiting to enter AWS registration flow...")
             deadline_profile = time.time() + 60
             while time.time() < deadline_profile:
                 if AWS_PROFILE_DOMAIN in page.url:
@@ -503,42 +503,42 @@ class KiroBrowserRegister:
                 time.sleep(1)
 
             if AWS_PROFILE_DOMAIN in page.url:
-                self.log("进入 AWS Builder ID 注册流程...")
+                self.log("Entering AWS Builder ID registration flow...")
                 self._handle_aws_profile_spa(page, email, password)
             elif "kiro.dev" in page.url:
-                # 已有账号直接登录成功
-                self.log("已有账号，直接登录成功")
+                # Existing account logged in directly
+                self.log("Existing account, logged in directly")
             elif AWS_SIGNIN_DOMAIN in page.url:
-                # 还在 signin.aws：可能是已有账号密码步骤
-                self.log("检测到密码输入页，填写密码...")
+                # Still on signin.aws: may be existing account password step
+                self.log("Detected password input page, filling password...")
                 pwd_selectors = ['input[type="password"]', 'input[name="password"]']
                 _fill_input_wait(page, pwd_selectors, password, timeout=10)
                 time.sleep(0.5)
                 _click_submit_button(page, timeout=5)
                 time.sleep(3)
-                # 密码提交后再等一次 profile.aws 或 kiro.dev
+                # After password submit, wait again for profile.aws or kiro.dev
                 deadline2 = time.time() + 60
                 while time.time() < deadline2:
                     if AWS_PROFILE_DOMAIN in page.url:
-                        self.log("密码后跳转到 AWS 注册流程...")
+                        self.log("After password, redirected to AWS registration flow...")
                         self._handle_aws_profile_spa(page, email, password)
                         break
                     if "kiro.dev" in page.url:
                         break
                     time.sleep(1)
 
-            # 7. 等待跳回 kiro.dev
-            self.log("等待跳回 Kiro...")
+            # 7. Wait to redirect back to kiro.dev
+            self.log("Waiting to redirect back to Kiro...")
             if not _wait_for_url(page, "kiro.dev", timeout=60):
-                raise RuntimeError(f"Kiro 注册未跳转回应用: {page.url}")
+                raise RuntimeError(f"Kiro registration did not redirect back to app: {page.url}")
 
             time.sleep(3)
 
-            # 8. 提取 Cognito tokens
-            self.log("提取 Kiro 访问令牌...")
+            # 8. Extract Cognito tokens
+            self.log("Extracting Kiro access tokens...")
             tokens = _get_kiro_tokens(page, timeout=20)
 
-            self.log(f"✓ 注册成功: {email}")
+            self.log(f"Registration succeeded: {email}")
             return {
                 "email": email,
                 "password": password,

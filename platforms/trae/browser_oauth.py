@@ -1,4 +1,4 @@
-"""Trae OAuth 浏览器流程。"""
+"""Trae OAuth browser flow."""
 import time
 
 from core.executors.protocol import ProtocolExecutor
@@ -39,16 +39,16 @@ def register_with_browser_oauth(
         if chrome_user_data_dir or chrome_cdp_url:
             browser.auto_select_google_account()
         else:
-            log_fn(f"请在浏览器中完成登录，可使用 {method_text}，最长等待 {timeout} 秒")
+            log_fn(f"Please complete login in the browser, you can use {method_text}, waiting up to {timeout} seconds")
             if email_hint:
-                log_fn(f"请确认最终登录账号邮箱为: {email_hint}")
+                log_fn(f"Please confirm the final login email is: {email_hint}")
 
         final_url = browser.wait_for_url(
             lambda url: "trae.ai" in url and ("account-setting" in url or "workspace" in url or "ide" in url),
             timeout=timeout,
         )
         if not final_url:
-            raise RuntimeError(f"Trae 浏览器登录未在 {timeout} 秒内完成")
+            raise RuntimeError(f"Trae browser login did not complete within {timeout} seconds")
 
         browser_cookies = browser.cookie_dict(domain_substrings=("trae.ai",))
 
@@ -58,7 +58,7 @@ def register_with_browser_oauth(
         reg.step4_trae_login()
         token = reg.step5_get_token()
         if not token:
-            raise RuntimeError("Trae OAuth 登录后未获取到平台 token")
+            raise RuntimeError("Failed to get platform token after Trae OAuth login")
         result = reg.step6_check_login()
         cashier_url = reg.step7_create_order(token)
 

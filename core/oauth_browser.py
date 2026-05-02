@@ -1,4 +1,4 @@
-"""共享的 OAuth 浏览器辅助（支持普通 Playwright / Chrome Profile / CDP）。"""
+"""Shared OAuth browser helpers (supports plain Playwright / Chrome Profile / CDP)."""
 import time
 from typing import Callable, Iterable, Optional
 from urllib.parse import urlparse
@@ -38,7 +38,7 @@ def oauth_provider_hint_text(provider: str) -> str:
     label = oauth_provider_label(provider)
     if label:
         return label
-    return "邮箱、Google、GitHub 等任一可用方式"
+    return "Email, Google, GitHub or any other available method"
 
 
 # backward-compat alias
@@ -50,18 +50,18 @@ def finalize_oauth_email(actual_email: str, email_hint: str, platform_name: str)
     hint = (email_hint or "").strip()
     if actual and hint and actual.lower() != hint.lower():
         raise RuntimeError(
-            f"{platform_name} OAuth 登录邮箱与预期不一致: 实际 {actual}，预期 {hint}"
+            f"{platform_name} OAuth login email mismatch: actual {actual}, expected {hint}"
         )
     resolved = actual or hint
     if not resolved:
         raise RuntimeError(
-            f"{platform_name} OAuth 流程未识别到邮箱，请在任务里传入 email 或 oauth_email_hint"
+            f"{platform_name} OAuth flow could not identify email, please pass email or oauth_email_hint in the task"
         )
     return resolved
 
 
 def _detect_running_chrome_cdp(ports: tuple = (9222, 9223, 9224)) -> str:
-    """检测本机是否有 Chrome 开启了远程调试端口，返回 CDP URL 或空字符串。"""
+    """Detect if Chrome has a remote debugging port open locally, returns CDP URL or empty string."""
     import urllib.request
     for port in ports:
         try:
@@ -75,7 +75,7 @@ def _detect_running_chrome_cdp(ports: tuple = (9222, 9223, 9224)) -> str:
 
 
 def _detect_chrome_user_data_dir() -> str:
-    """自动检测系统 Chrome 用户数据目录。"""
+    """Auto-detect system Chrome user data directory."""
     import os, sys
     if sys.platform == "darwin":
         path = os.path.expanduser("~/Library/Application Support/Google/Chrome")
@@ -87,7 +87,7 @@ def _detect_chrome_user_data_dir() -> str:
 
 
 def _relaunch_chrome_with_debug_port(port: int = 9222) -> bool:
-    """macOS: 关闭 Chrome 并用远程调试端口重启，成功返回 True。"""
+    """macOS: close Chrome and relaunch with remote debugging port, returns True on success."""
     import subprocess, sys, time
     if sys.platform != "darwin":
         return False
@@ -137,7 +137,7 @@ _GOOGLE_ACCOUNT_SELECTORS = [
 
 
 class OAuthBrowser:
-    """全自动 OAuth 浏览器（支持普通 Playwright / Chrome Profile / CDP）。"""
+    """Fully automatic OAuth browser (supports plain Playwright / Chrome Profile / CDP)."""
 
     def __init__(
         self,
@@ -192,18 +192,18 @@ class OAuthBrowser:
                 # Try to relaunch Chrome with debug port
                 user_data_dir = _detect_chrome_user_data_dir()
                 if user_data_dir:
-                    self.log("[OAuthBrowser] 正在重启 Chrome 并开启远程调试端口...")
+                    self.log("[OAuthBrowser] Restarting Chrome with remote debugging port...")
                     if _relaunch_chrome_with_debug_port(9222):
                         cdp_url = "http://127.0.0.1:9222"
             if cdp_url:
-                self.log(f"[OAuthBrowser] 连接已运行的 Chrome (CDP): {cdp_url}")
+                self.log(f"[OAuthBrowser] Connecting to running Chrome (CDP): {cdp_url}")
                 self.browser = self._pw.chromium.connect_over_cdp(cdp_url)
                 self.context = self.browser.contexts[0] if self.browser.contexts else self.browser.new_context()
                 pages = self.context.pages
                 self.page = pages[0] if pages else self.context.new_page()
             else:
                 # Fallback: plain Playwright Chromium
-                self.log("[OAuthBrowser] 未找到系统 Chrome，使用 Playwright Chromium")
+                self.log("[OAuthBrowser] System Chrome not found, using Playwright Chromium")
                 launch_kwargs = {"headless": self.headless}
                 if proxy_cfg:
                     launch_kwargs["proxy"] = proxy_cfg
@@ -303,8 +303,8 @@ class OAuthBrowser:
         return bool(clicked)
 
     def auto_select_google_account(self, timeout: int = 15) -> bool:
-        """Google 账号选择器出现时自动点击第一个账号。
-        适用于 Chrome Profile 模式：Google 已登录，弹出账号选择器。
+        """Auto-click the first account when Google account selector appears.
+        Suitable for Chrome Profile mode: Google is already logged in, account selector pops up.
         """
         deadline = time.time() + timeout
         selectors = ", ".join(_GOOGLE_ACCOUNT_SELECTORS)
@@ -317,7 +317,7 @@ class OAuthBrowser:
                     el = page.query_selector(selectors)
                     if el:
                         el.click()
-                        self.log("[OAuthBrowser] Google 账号选择器：已自动点击第一个账号")
+                        self.log("[OAuthBrowser] Google account selector: auto-clicked first account")
                         return True
                 except Exception:
                     pass

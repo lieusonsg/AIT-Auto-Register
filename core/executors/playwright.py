@@ -1,4 +1,4 @@
-"""Playwright 执行器 - 支持 headless/headed 模式"""
+"""Playwright executor - supports headless/headed modes"""
 from ..base_executor import BaseExecutor, Response
 
 
@@ -25,13 +25,13 @@ class PlaywrightExecutor(BaseExecutor):
         if self.proxy:
             launch_opts["proxy"] = {"server": self.proxy}
         self._browser = self._pw.chromium.launch(**launch_opts)
-        
-        # 设置更长的默认超时
+
+        # Set longer default timeout
         self._context = self._browser.new_context(
             viewport={"width": 1280, "height": 720},
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
-        self._context.set_default_timeout(60000)  # 60秒默认超时
+        self._context.set_default_timeout(60000)  # 60 seconds default timeout
         self._page = self._context.new_page()
 
     def get(self, url, *, headers=None, params=None) -> Response:
@@ -83,47 +83,47 @@ class PlaywrightExecutor(BaseExecutor):
             self._context.add_cookies([
                 {"name": k, "value": v, "domain": domain, "path": "/"} for k, v in cookies.items()
             ])
-    
-    # 浏览器操作方法
+
+    # Browser operation methods
     def goto(self, url: str, **kwargs):
-        """导航到 URL"""
+        """Navigate to URL"""
         return self._page.goto(url, **kwargs)
-    
+
     def fill(self, selector: str, value: str, **kwargs):
-        """填充输入框"""
+        """Fill input field"""
         return self._page.fill(selector, value, **kwargs)
-    
+
     def click(self, selector: str, **kwargs):
-        """点击元素"""
+        """Click element"""
         return self._page.click(selector, **kwargs)
-    
+
     def wait_for_selector(self, selector: str, **kwargs):
-        """等待元素出现"""
+        """Wait for element to appear"""
         return self._page.wait_for_selector(selector, **kwargs)
-    
+
     def query_selector(self, selector: str):
-        """查询元素"""
+        """Query element"""
         return self._page.query_selector(selector)
-    
+
     def query_selector_all(self, selector: str):
-        """查询所有匹配元素"""
+        """Query all matching elements"""
         return self._page.query_selector_all(selector)
-    
+
     def evaluate(self, script: str, *args):
-        """执行 JavaScript"""
+        """Execute JavaScript"""
         return self._page.evaluate(script, *args)
-    
+
     def content(self) -> str:
-        """获取页面 HTML"""
+        """Get page HTML"""
         return self._page.content()
-    
+
     @property
     def url(self) -> str:
-        """当前页面 URL"""
+        """Current page URL"""
         return self._page.url
-    
+
     def press(self, selector: str, key: str, **kwargs):
-        """按键"""
+        """Press key"""
         return self._page.press(selector, key, **kwargs)
 
     def close(self) -> None:

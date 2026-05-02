@@ -3,7 +3,7 @@ import random
 class browser_config:
     @staticmethod
     def get_random_browser_config(browser_type):
-        # 返回: 浏览器名, 版本, User-Agent, Sec-CH-UA
+        # Returns: browser name, version, User-Agent, Sec-CH-UA
         versions = ["135.0.0.0", "136.0.0.0", "137.0.0.0"]
         ver = random.choice(versions)
         major = ver.split(".")[0]

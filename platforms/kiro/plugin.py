@@ -1,4 +1,4 @@
-"""Kiro 平台插件 - 基于 AWS Builder ID 注册"""
+"""Kiro platform plugin - AWS Builder ID based registration"""
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
 from core.registration import BrowserRegistrationAdapter, OtpSpec, ProtocolMailboxAdapter, ProtocolOAuthAdapter, RegistrationCapability, RegistrationResult
@@ -94,7 +94,7 @@ class KiroPlatform(BasePlatform):
             ),
             oauth_runner=self._run_protocol_oauth,
             capability=RegistrationCapability(oauth_headless_requires_browser_reuse=True),
-            otp_spec=OtpSpec(wait_message="等待验证码..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code..."),
         )
 
     def build_protocol_oauth_adapter(self):
@@ -124,13 +124,13 @@ class KiroPlatform(BasePlatform):
             worker_builder=_build_worker,
             register_runner=_run_worker,
             otp_spec=OtpSpec(
-                wait_message="等待验证码...",
+                wait_message="Waiting for verification code...",
                 timeout=resolve_timeout(self.config.extra or {}, ("otp_timeout",), 120),
             ),
         )
 
     def check_valid(self, account: Account) -> bool:
-        """通过 refreshToken 检测账号是否有效"""
+        """Check if account is valid via refreshToken"""
         extra = account.extra or {}
         refresh_token = extra.get("refreshToken", "")
         if not refresh_token:
@@ -148,9 +148,9 @@ class KiroPlatform(BasePlatform):
 
     def get_platform_actions(self) -> list:
         return [
-            {"id": "switch_account", "label": "切换到桌面应用", "params": []},
-            {"id": "refresh_token", "label": "刷新 Token", "params": []},
-            {"id": "get_account_state", "label": "查询账号状态/额度提示", "params": []},
+            {"id": "switch_account", "label": "Switch to desktop app", "params": []},
+            {"id": "refresh_token", "label": "Refresh Token", "params": []},
+            {"id": "get_account_state", "label": "Query account status/quota info", "params": []},
         ]
 
     def get_desktop_state(self) -> dict:
@@ -179,7 +179,7 @@ class KiroPlatform(BasePlatform):
             session_token = extra.get("sessionToken", "")
             profile_arn = extra.get("profileArn", "")
             oauth_provider = (extra.get("oauthProvider", "") or "").strip().lower()
-            refresh_result = {"ok": False, "message": "当前账号未提供 refreshToken/clientId/clientSecret，跳过远端刷新校验"}
+            refresh_result = {"ok": False, "message": "Account does not provide refreshToken/clientId/clientSecret, skipping remote refresh validation"}
 
             if refresh_token and client_id and client_secret:
                 ok, result = refresh_kiro_token(refresh_token, client_id, client_secret)
@@ -192,7 +192,7 @@ class KiroPlatform(BasePlatform):
                         "refreshTokenUpdated": refresh_token != extra.get("refreshToken", ""),
                     }
                 else:
-                    refresh_result = {"ok": False, "message": result.get("error", "刷新失败")}
+                    refresh_result = {"ok": False, "message": result.get("error", "Refresh failed")}
 
             switch_kwargs = {}
             if oauth_provider in ("google", "github"):
@@ -214,7 +214,7 @@ class KiroPlatform(BasePlatform):
             usage_summary = summarize_kiro_usage(portal_state)
             restart_ok, restart_msg = restart_kiro_ide()
             return {"ok": True, "data": {
-                "message": f"{msg}。{restart_msg}" if restart_ok else msg,
+                "message": f"{msg}. {restart_msg}" if restart_ok else msg,
                 "access_token": access_token,
                 "accessToken": access_token,
                 "refreshToken": refresh_token,
@@ -238,7 +238,7 @@ class KiroPlatform(BasePlatform):
                 },
                 "desktop_app_state": get_kiro_desktop_state(),
                 "restart": {"ok": restart_ok, "message": restart_msg},
-                "quota_note": "Kiro 可通过 Web Portal 查询订阅、试用与 credits 用量，但依赖 sessionToken 浏览器会话；若缺少会话则只能返回 token 刷新校验结果。",
+                "quota_note": "Kiro can query subscriptions, trials and credits usage via Web Portal, but it depends on sessionToken browser session; if the session is missing, only token refresh validation results can be returned.",
             }}
 
         elif action_id == "refresh_token":
@@ -260,7 +260,7 @@ class KiroPlatform(BasePlatform):
                         "refreshToken": new_refresh,
                     },
                 }
-            return {"ok": False, "error": result.get("error", "刷新失败")}
+            return {"ok": False, "error": result.get("error", "Refresh failed")}
 
         elif action_id == "get_account_state":
             from platforms.kiro.switch import (
@@ -277,7 +277,7 @@ class KiroPlatform(BasePlatform):
             session_token = extra.get("sessionToken", "")
             profile_arn = extra.get("profileArn", "")
             current = read_current_kiro_account() or {}
-            refresh_state = {"ok": False, "message": "当前账号未提供 refreshToken/clientId/clientSecret，无法执行远端刷新校验"}
+            refresh_state = {"ok": False, "message": "Account does not provide refreshToken/clientId/clientSecret, cannot perform remote refresh validation"}
             access_token = extra.get("accessToken", "") or account.token
             if refresh_token and client_id and client_secret:
                 ok, result = refresh_kiro_token(refresh_token, client_id, client_secret)
@@ -285,7 +285,7 @@ class KiroPlatform(BasePlatform):
                     access_token = result["accessToken"]
                     refresh_state = {"ok": True, "expiresIn": result.get("expiresIn", 0)}
                 else:
-                    refresh_state = {"ok": False, "message": result.get("error", "刷新失败")}
+                    refresh_state = {"ok": False, "message": result.get("error", "Refresh failed")}
             portal_state = get_kiro_portal_state(access_token, session_token, profile_arn=profile_arn) or {}
             usage_summary = summarize_kiro_usage(portal_state)
             return {
@@ -312,8 +312,8 @@ class KiroPlatform(BasePlatform):
                         "matches_target": _kiro_local_matches_target(current, access_token, refresh_token),
                     },
                     "desktop_app_state": get_kiro_desktop_state(),
-                    "quota_note": "Kiro 可通过 Web Portal 查询订阅、试用与 credits 用量，但依赖 sessionToken 浏览器会话；若缺少会话则只能返回 token 刷新校验结果。",
+                    "quota_note": "Kiro can query subscriptions, trials and credits usage via Web Portal, but it depends on sessionToken browser session; if the session is missing, only token refresh validation results can be returned.",
                 },
             }
 
-        raise NotImplementedError(f"未知操作: {action_id}")
+        raise NotImplementedError(f"Unknown action: {action_id}")

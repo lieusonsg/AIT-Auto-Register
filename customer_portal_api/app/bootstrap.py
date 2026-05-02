@@ -109,7 +109,7 @@ def _seed_admin(session: Session) -> None:
             username=settings.seed_admin_username,
             email=settings.seed_admin_email,
             password_hash=hash_password(settings.seed_admin_password),
-            display_name="管理员",
+            display_name="Admin",
             role_code="admin",
             status="active",
             created_at=utcnow(),
@@ -180,7 +180,7 @@ def _seed_products(session: Session) -> None:
             PortalProduct(
                 product_code=product_code,
                 platform_code=platform["platform_code"],
-                product_name=f"{platform['display_name']} 月度订阅",
+                product_name=f"{platform['display_name']} Monthly Subscription",
                 amount=9.9,
                 duration_days=30,
                 status="active",

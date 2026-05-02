@@ -1,4 +1,4 @@
-"""ChatGPT / Codex CLI 平台插件"""
+"""ChatGPT / Codex CLI platform plugin"""
 import secrets
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
@@ -14,21 +14,23 @@ def _result_text(result, key: str) -> str:
 
 
 def _assert_complete_oauth_callback(result) -> None:
-    # NextAuth 流程只返回 account_id + access_token (+ session_token)
-    # 传统 Codex CLI 流程返回全部 4 个字段
+    # NextAuth flow only returns account_id + access_token (+ session_token)
+    # Legacy Codex CLI flow returns all 4 fields
     required = ("account_id", "access_token")
     missing = [key for key in required if not _result_text(result, key)]
     if missing:
         raise RuntimeError(
-            "ChatGPT 注册未完成完整 OAuth callback，缺少: " + ", ".join(missing)
+            "ChatGPT registration did not complete full OAuth callback, missing: " + ", ".join(missing)
         )
 
 
 def _generate_chatgpt_registration_password(length: int = 16) -> str:
-    """生成更稳定通过 OpenAI 注册页校验的密码。
+    """Generate a password that reliably passes OpenAI signup validation.
 
-    旧协议流已经验证过：至少带小写、数字、符号时，成功率明显更稳。
-    这里再补一个大写字符，避免浏览器流随机生成出“看起来够长但组合不够强”的密码。
+    The legacy protocol flow has confirmed that including at least lowercase,
+    digit, and symbol characters significantly improves success rate.
+    Here we also add an uppercase character to avoid browser-flow randomly
+    generating a password that "looks long enough but isn't strong enough."
     """
     specials = ",._!@#"
     minimum_length = 12
@@ -173,7 +175,7 @@ class ChatGPTPlatform(BasePlatform):
             ),
             oauth_runner=self._run_protocol_oauth,
             capability=RegistrationCapability(oauth_headless_requires_browser_reuse=True),
-            otp_spec=OtpSpec(wait_message="等待验证码...", timeout=600),
+            otp_spec=OtpSpec(wait_message="Waiting for OTP...", timeout=600),
         )
 
     def build_protocol_oauth_adapter(self):
@@ -226,22 +228,22 @@ class ChatGPTPlatform(BasePlatform):
 
     def get_platform_actions(self) -> list:
         return [
-            {"id": "switch_account", "label": "切换到 Codex 桌面端", "params": []},
-            {"id": "get_account_state", "label": "查询账号状态/订阅", "params": []},
-            {"id": "refresh_token", "label": "刷新 Token", "params": []},
-            {"id": "payment_link", "label": "生成支付链接",
+            {"id": "switch_account", "label": "Switch to Codex Desktop", "params": []},
+            {"id": "get_account_state", "label": "Query account status/subscription", "params": []},
+            {"id": "refresh_token", "label": "Refresh Token", "params": []},
+            {"id": "payment_link", "label": "Generate payment link",
              "params": [
-                 {"key": "country", "label": "地区", "type": "select",
+                 {"key": "country", "label": "Region", "type": "select",
                   "options": ["US","SG","TR","HK","JP","GB","AU","CA"]},
-                 {"key": "plan", "label": "套餐", "type": "select",
+                 {"key": "plan", "label": "Plan", "type": "select",
                   "options": ["plus", "team"]},
              ]},
-            {"id": "upload_cpa", "label": "上传 CPA",
+            {"id": "upload_cpa", "label": "Upload CPA",
              "params": [
                  {"key": "api_url", "label": "CPA API URL", "type": "text"},
                  {"key": "api_key", "label": "CPA API Key", "type": "text"},
              ]},
-            {"id": "upload_tm", "label": "上传 Team Manager",
+            {"id": "upload_tm", "label": "Upload Team Manager",
              "params": [
                  {"key": "api_url", "label": "TM API URL", "type": "text"},
                  {"key": "api_key", "label": "TM API Key", "type": "text"},
@@ -417,6 +419,6 @@ class ChatGPTPlatform(BasePlatform):
         if url and a.cookies:
             open_url_incognito(url, a.cookies)
 
-        return {"ok": bool(url), "data": {"url": url, "message": "Payment link generated, opening browser with credentials..."}} 
+        return {"ok": bool(url), "data": {"url": url, "message": "Payment link generated, opening browser with credentials..."}}
 
-    
+

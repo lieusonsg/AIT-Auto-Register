@@ -38,7 +38,7 @@ class AuthService:
             )
         ).first()
         if not user or user.status != "active" or not verify_password(password, user.password_hash):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="账号或密码错误")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect account or password")
         user.last_login_at = utcnow()
         user.updated_at = utcnow()
         self.session.add(user)
@@ -50,10 +50,10 @@ class AuthService:
             select(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(refresh_token))
         ).first()
         if not token_row or token_row.revoked_at is not None or token_row.expires_at <= utcnow():
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token 无效或已过期")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is invalid or expired")
         user = self.session.get(PortalUser, token_row.user_id)
         if not user or user.status != "active":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在或已被禁用")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or disabled")
         token_row.revoked_at = utcnow()
         self.session.add(token_row)
         self.session.commit()

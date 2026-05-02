@@ -1,4 +1,4 @@
-"""Grok 协议邮箱注册 worker。"""
+"""Grok protocol mailbox registration worker."""
 from __future__ import annotations
 
 from typing import Callable, Optional
@@ -29,9 +29,9 @@ class GrokProtocolMailboxWorker:
         family_name = _rand_name()
 
         self.client.step1_send_otp(email)
-        code = otp_callback() if otp_callback else input("验证码: ")
+        code = otp_callback() if otp_callback else input("Verification code: ")
         if not code:
-            raise RuntimeError("未获取到验证码")
+            raise RuntimeError("Failed to get verification code")
 
         self.client.step2_verify_otp(email, code)
         signup_body = self.client.step3_signup(email, use_password, code, given_name, family_name)
@@ -42,7 +42,7 @@ class GrokProtocolMailboxWorker:
         if sso:
             self.log(f"  ✅ sso={sso[:40]}...")
         else:
-            self.log("  ⚠️ 未获取到 sso cookie")
+            self.log("  ⚠️ Failed to get sso cookie")
 
         return {
             "email": email,

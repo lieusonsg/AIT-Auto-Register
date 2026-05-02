@@ -23,7 +23,7 @@ def test_assert_complete_oauth_callback_accepts_complete_payload():
 
 
 def test_assert_complete_oauth_callback_rejects_partial_payload():
-    with pytest.raises(RuntimeError, match="完整 OAuth callback"):
+    with pytest.raises(RuntimeError, match="complete OAuth callback"):
         _assert_complete_oauth_callback({
             "account_id": "acct_123",
             "access_token": "at_123",
@@ -64,7 +64,7 @@ def test_protocol_mailbox_mapper_rejects_partial_oauth_result():
         workspace_id="",
     )
 
-    with pytest.raises(RuntimeError, match="完整 OAuth callback"):
+    with pytest.raises(RuntimeError, match="complete OAuth callback"):
         adapter.result_mapper(ctx, result)
 
 
@@ -102,5 +102,5 @@ def test_browser_register_run_rejects_session_fallback(monkeypatch):
         log_fn=lambda message: None,
     )
 
-    with pytest.raises(RuntimeError, match="已拒绝回退"):
+    with pytest.raises(RuntimeError, match="fallback rejected"):
         worker.run(email="user@example.com", password="Secret123!")

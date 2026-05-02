@@ -1,4 +1,4 @@
-"""OpenBlockLabs 平台插件"""
+"""OpenBlockLabs platform plugin"""
 import random, string
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
@@ -58,7 +58,7 @@ class OpenBlockLabsPlatform(BasePlatform):
             ),
             oauth_runner=self._run_protocol_oauth,
             capability=RegistrationCapability(oauth_allowed_executor_types=("headed",)),
-            otp_spec=OtpSpec(wait_message="等待验证码..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code..."),
         )
 
     def build_protocol_oauth_adapter(self):
@@ -86,7 +86,7 @@ class OpenBlockLabsPlatform(BasePlatform):
             result_mapper=lambda ctx, result: self._map_openblocklabs_result(result),
             worker_builder=_build_worker,
             register_runner=_run_worker,
-            otp_spec=OtpSpec(wait_message="等待验证码..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code..."),
         )
 
     def check_valid(self, account: Account) -> bool:

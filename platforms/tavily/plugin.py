@@ -1,4 +1,4 @@
-"""Tavily 平台插件"""
+"""Tavily platform plugin"""
 import random, string
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
@@ -62,8 +62,8 @@ class TavilyPlatform(BasePlatform):
             ),
             oauth_runner=self._run_browser_oauth,
             capability=RegistrationCapability(oauth_allowed_executor_types=("headed",)),
-            otp_spec=OtpSpec(wait_message="等待验证码邮件..."),
-            link_spec=LinkSpec(wait_message="等待验证链接邮件..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code email..."),
+            link_spec=LinkSpec(wait_message="Waiting for verification link email..."),
             use_captcha_for_mailbox=True,
             preflight=self._browser_preflight,
         )
@@ -83,7 +83,7 @@ class TavilyPlatform(BasePlatform):
 
     def build_protocol_oauth_adapter(self):
         return ProtocolOAuthAdapter(
-            oauth_runner=lambda ctx: (_ for _ in ()).throw(RuntimeError("Tavily 当前仅浏览器模式支持 oauth_browser，请使用 executor_type=headed")),
+            oauth_runner=lambda ctx: (_ for _ in ()).throw(RuntimeError("Tavily currently only supports oauth_browser in browser mode, please use executor_type=headed")),
             result_mapper=lambda ctx, result: self._map_tavily_result(result),
         )
 
@@ -100,7 +100,7 @@ class TavilyPlatform(BasePlatform):
                 password=ctx.password,
                 otp_callback=artifacts.otp_callback,
             ),
-            otp_spec=OtpSpec(wait_message="等待验证码邮件..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code email..."),
             use_captcha=True,
             use_executor=True,
         )

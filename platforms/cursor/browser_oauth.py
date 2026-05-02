@@ -1,4 +1,4 @@
-"""Cursor OAuth 浏览器流程。"""
+"""Cursor OAuth browser flow."""
 import time
 
 from core.oauth_browser import (
@@ -40,9 +40,9 @@ def register_with_browser_oauth(
         if chrome_user_data_dir or chrome_cdp_url:
             browser.auto_select_google_account()
         else:
-            log_fn(f"请在浏览器中完成登录，可使用 {method_text}，最长等待 {timeout} 秒")
+            log_fn(f"Please complete login in the browser, you can use {method_text}, waiting up to {timeout} seconds")
             if email_hint:
-                log_fn(f"请确认最终登录账号邮箱为: {email_hint}")
+                log_fn(f"Please confirm the final login email is: {email_hint}")
 
         token = browser.wait_for_cookie_value(
             ["WorkosCursorSessionToken"],
@@ -50,7 +50,7 @@ def register_with_browser_oauth(
             domain_substrings=("cursor.com", "cursor.sh"),
         )
         if not token:
-            raise RuntimeError(f"Cursor 浏览器登录未在 {timeout} 秒内拿到 Session Token")
+            raise RuntimeError(f"Cursor browser login did not get Session Token within {timeout} seconds")
 
         user_info = get_cursor_user_info(token) or {}
         resolved_email = finalize_oauth_email(user_info.get("email", ""), email_hint, "Cursor")

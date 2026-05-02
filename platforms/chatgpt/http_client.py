@@ -1,4 +1,4 @@
-"""OpenAI 专用 HTTP 客户端"""
+"""OpenAI dedicated HTTP client"""
 from typing import Any, Dict, Optional, Tuple
 
 from core.http_client import HTTPClient, HTTPClientError, RequestConfig
@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 class OpenAIHTTPClient(HTTPClient):
     """
-    OpenAI 专用 HTTP 客户端
-    包含 OpenAI API 特定的请求方法
+    OpenAI dedicated HTTP client
+    Contains OpenAI API specific request methods
     """
 
     def __init__(
@@ -18,20 +18,20 @@ class OpenAIHTTPClient(HTTPClient):
         config: Optional[RequestConfig] = None
     ):
         """
-        初始化 OpenAI HTTP 客户端
+        Initialize OpenAI HTTP client
 
         Args:
-            proxy_url: 代理 URL
-            config: 请求配置
+            proxy_url: Proxy URL
+            config: Request configuration
         """
         super().__init__(proxy_url, config)
 
-        # OpenAI 特定的默认配置
+        # OpenAI-specific default configuration
         if config is None:
             self.config.timeout = 30
             self.config.max_retries = 3
 
-        # 默认请求头
+        # Default request headers
         self.default_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                          "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
@@ -46,27 +46,27 @@ class OpenAIHTTPClient(HTTPClient):
 
     def check_ip_location(self) -> Tuple[bool, Optional[str]]:
         """
-        检查 IP 地理位置
+        Check IP geolocation
 
         Returns:
-            Tuple[是否支持, 位置信息]
+            Tuple[is_supported, location_info]
         """
         try:
             response = self.get("https://cloudflare.com/cdn-cgi/trace", timeout=10)
             trace_text = response.text
 
-            # 解析位置信息
+            # Parse location info
             import re
             loc_match = re.search(r"loc=([A-Z]+)", trace_text)
             loc = loc_match.group(1) if loc_match else None
 
-            # 检查是否支持
+            # Check if supported
             if loc in ["CN", "HK", "MO", "TW"]:
                 return False, loc
             return True, loc
 
         except Exception as e:
-            logger.error(f"检查 IP 地理位置失败: {e}")
+            logger.error(f"Failed to check IP geolocation: {e}")
             return False, None
 
     def send_openai_request(
@@ -79,28 +79,28 @@ class OpenAIHTTPClient(HTTPClient):
         **kwargs
     ) -> Dict[str, Any]:
         """
-        发送 OpenAI API 请求
+        Send OpenAI API request
 
         Args:
-            endpoint: API 端点
-            method: HTTP 方法
-            data: 表单数据
-            json_data: JSON 数据
-            headers: 请求头
-            **kwargs: 其他参数
+            endpoint: API endpoint
+            method: HTTP method
+            data: Form data
+            json_data: JSON data
+            headers: Request headers
+            **kwargs: Other parameters
 
         Returns:
-            响应 JSON 数据
+            Response JSON data
 
         Raises:
-            HTTPClientError: 请求失败
+            HTTPClientError: Request failed
         """
-        # 合并请求头
+        # Merge request headers
         request_headers = self.default_headers.copy()
         if headers:
             request_headers.update(headers)
 
-        # 设置 Content-Type
+        # Set Content-Type
         if json_data is not None and "Content-Type" not in request_headers:
             request_headers["Content-Type"] = "application/json"
         elif data is not None and "Content-Type" not in request_headers:
@@ -116,28 +116,28 @@ class OpenAIHTTPClient(HTTPClient):
                 **kwargs
             )
 
-            # 检查响应状态码
+            # Check response status code
             response.raise_for_status()
 
-            # 尝试解析 JSON
+            # Try to parse JSON
             try:
                 return response.json()
             except json.JSONDecodeError:
                 return {"raw_response": response.text}
 
         except cffi_requests.RequestsError as e:
-            raise HTTPClientError(f"OpenAI 请求失败: {endpoint} - {e}")
+            raise HTTPClientError(f"OpenAI request failed: {endpoint} - {e}")
 
     def check_sentinel(self, did: str, proxies: Optional[Dict] = None) -> Optional[str]:
         """
-        检查 Sentinel 拦截
+        Check Sentinel interception
 
         Args:
             did: Device ID
-            proxies: 代理配置
+            proxies: Proxy configuration
 
         Returns:
-            Sentinel token 或 None
+            Sentinel token or None
         """
         from .constants import OPENAI_API_ENDPOINTS
 
@@ -157,11 +157,11 @@ class OpenAIHTTPClient(HTTPClient):
             if response.status_code == 200:
                 return response.json().get("token")
             else:
-                logger.warning(f"Sentinel 检查失败: {response.status_code}")
+                logger.warning(f"Sentinel check failed: {response.status_code}")
                 return None
 
         except Exception as e:
-            logger.error(f"Sentinel 检查异常: {e}")
+            logger.error(f"Sentinel check exception: {e}")
             return None
 
 
@@ -170,14 +170,14 @@ def create_http_client(
     config: Optional[RequestConfig] = None
 ) -> HTTPClient:
     """
-    创建 HTTP 客户端工厂函数
+    HTTP client factory function
 
     Args:
-        proxy_url: 代理 URL
-        config: 请求配置
+        proxy_url: Proxy URL
+        config: Request configuration
 
     Returns:
-        HTTPClient 实例
+        HTTPClient instance
     """
     return HTTPClient(proxy_url, config)
 
@@ -187,13 +187,13 @@ def create_openai_client(
     config: Optional[RequestConfig] = None
 ) -> OpenAIHTTPClient:
     """
-    创建 OpenAI HTTP 客户端工厂函数
+    OpenAI HTTP client factory function
 
     Args:
-        proxy_url: 代理 URL
-        config: 请求配置
+        proxy_url: Proxy URL
+        config: Request configuration
 
     Returns:
-        OpenAIHTTPClient 实例
+        OpenAIHTTPClient instance
     """
     return OpenAIHTTPClient(proxy_url, config)

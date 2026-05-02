@@ -1,4 +1,4 @@
-"""注册成功率仪表盘 API。"""
+"""Registration success rate dashboard API."""
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
@@ -17,7 +17,7 @@ def _utcnow() -> datetime:
 
 @router.get("/overview")
 def stats_overview():
-    """全局概览：总注册数、成功率、账号状态分布。"""
+    """Global overview: total registrations, success rate, account status distribution."""
     with Session(engine) as session:
         total = int(session.exec(
             select(func.count()).select_from(TaskLog)
@@ -54,7 +54,7 @@ def stats_overview():
 
 @router.get("/by-platform")
 def stats_by_platform():
-    """按平台统计成功率。"""
+    """Statistics by platform success rate."""
     with Session(engine) as session:
         rows = session.exec(
             select(
@@ -82,7 +82,7 @@ def stats_by_platform():
 
 @router.get("/by-day")
 def stats_by_day(days: int = 30, platform: str = ""):
-    """按天统计注册趋势。"""
+    """Registration trend by day."""
     cutoff = _utcnow() - timedelta(days=days)
     with Session(engine) as session:
         q = select(TaskLog).where(TaskLog.created_at >= cutoff)
@@ -109,7 +109,7 @@ def stats_by_day(days: int = 30, platform: str = ""):
 
 @router.get("/by-proxy")
 def stats_by_proxy():
-    """代理成功率排行。"""
+    """Proxy success rate ranking."""
     with Session(engine) as session:
         proxies = session.exec(
             select(ProxyModel).order_by(ProxyModel.success_count.desc())
@@ -134,7 +134,7 @@ def stats_by_proxy():
 
 @router.get("/errors")
 def stats_errors(days: int = 7, platform: str = "", limit: int = 20):
-    """最近的失败错误聚合（按错误信息分组）。"""
+    """Recent failed error aggregation (grouped by error message)."""
     cutoff = _utcnow() - timedelta(days=days)
     with Session(engine) as session:
         q = (

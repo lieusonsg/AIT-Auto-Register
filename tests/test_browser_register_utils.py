@@ -543,4 +543,4 @@ class TestSyncHiddenBirthdayInput:
 
         assert result is True
         assert page.recorded_birthdate == "1994-08-17"
-        assert any("隐藏 birthday" in message for message in logs)
+        assert any("hidden birthday" in message for message in logs)

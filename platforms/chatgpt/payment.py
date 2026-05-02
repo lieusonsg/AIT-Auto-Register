@@ -1,5 +1,5 @@
 """
-支付核心逻辑 — 生成 Plus/Team 支付链接、无痕打开浏览器、检测订阅状态
+Payment core logic - generate Plus/Team payment links, open browser incognito, check subscription status
 """
 
 import json
@@ -43,7 +43,7 @@ _COUNTRY_CURRENCY_MAP = {
 
 
 def _extract_oai_did(cookies_str: str) -> Optional[str]:
-    """从 cookie 字符串中提取 oai-device-id"""
+    """Extract oai-device-id from cookie string"""
     for part in cookies_str.split(";"):
         part = part.strip()
         if part.startswith("oai-did="):
@@ -117,7 +117,7 @@ def _subscription_status_from_usage(data: dict) -> str:
 
 def _fetch_usage_data(account, proxy: Optional[str] = None) -> dict:
     if not account.access_token:
-        raise ValueError("账号缺少 access_token")
+        raise ValueError("Account missing access_token")
 
     headers = {
         "Authorization": f"Bearer {account.access_token}",
@@ -137,41 +137,41 @@ def _fetch_usage_data(account, proxy: Optional[str] = None) -> dict:
     resp.raise_for_status()
     data = resp.json()
     if not isinstance(data, dict):
-        raise ValueError("wham/usage 响应格式异常")
+        raise ValueError("wham/usage response format is abnormal")
     return data
 
 
 def _parse_cookie_str(cookies_str: str, domain: str) -> list:
-    """将 'key=val; key2=val2' 格式解析为 Playwright cookie 列表"""
+    """Parse 'key=val; key2=val2' format into Playwright cookie list"""
     cookies = []
-    # Playwright对于部分域名的cookie要求首字母带点
+    # Playwright requires a leading dot for some domain cookies
     if domain == "chatgpt.com":
         domain = ".chatgpt.com"
-        
+
     for part in cookies_str.split(";"):
         part = part.strip()
         if "=" not in part:
             continue
         name, _, value = part.partition("=")
         cookie_name = name.strip()
-        
+
         cookie_obj = {
             "name": cookie_name,
             "value": value.strip(),
             "domain": domain,
             "path": "/",
         }
-        
-        # Chromium/Playwright: prefix __Secure- 开头的 cookie 必须携带 secure: True 的 flag
+
+        # Chromium/Playwright: cookies prefixed with __Secure- must have secure: True flag
         if cookie_name.startswith("__Secure-"):
             cookie_obj["secure"] = True
-            
+
         cookies.append(cookie_obj)
     return cookies
 
 
 def _open_url_system_browser(url: str) -> bool:
-    """回退方案：调用系统浏览器以无痕模式打开"""
+    """Fallback: open system browser in incognito mode"""
     platform = sys.platform
     try:
         if platform == "win32":
@@ -192,7 +192,7 @@ def _open_url_system_browser(url: str) -> bool:
                 except FileNotFoundError:
                     continue
     except Exception as e:
-        logger.warning(f"系统浏览器无痕打开失败: {e}")
+        logger.warning(f"System browser incognito open failed: {e}")
     return False
 
 
@@ -201,9 +201,9 @@ def generate_plus_link(
     proxy: Optional[str] = None,
     country: str = "SG",
 ) -> str:
-    """生成 Plus 支付链接（后端携带账号 cookie 发请求）"""
+    """Generate Plus payment link (backend sends request with account cookie)"""
     if not account.access_token:
-        raise ValueError("账号缺少 access_token")
+        raise ValueError("Account missing access_token")
 
     currency = _COUNTRY_CURRENCY_MAP.get(country, "USD")
     headers = {
@@ -239,7 +239,7 @@ def generate_plus_link(
     data = resp.json()
     if "checkout_session_id" in data:
         return TEAM_CHECKOUT_BASE_URL + data["checkout_session_id"]
-    raise ValueError(data.get("detail", "API 未返回 checkout_session_id"))
+    raise ValueError(data.get("detail", "API did not return checkout_session_id"))
 
 
 def generate_team_link(
@@ -250,9 +250,9 @@ def generate_team_link(
     proxy: Optional[str] = None,
     country: str = "SG",
 ) -> str:
-    """生成 Team 支付链接（后端携带账号 cookie 发请求）"""
+    """Generate Team payment link (backend sends request with account cookie)"""
     if not account.access_token:
-        raise ValueError("账号缺少 access_token")
+        raise ValueError("Account missing access_token")
 
     currency = _COUNTRY_CURRENCY_MAP.get(country, "USD")
     headers = {
@@ -294,16 +294,16 @@ def generate_team_link(
     data = resp.json()
     if "checkout_session_id" in data:
         return TEAM_CHECKOUT_BASE_URL + data["checkout_session_id"]
-    raise ValueError(data.get("detail", "API 未返回 checkout_session_id"))
+    raise ValueError(data.get("detail", "API did not return checkout_session_id"))
 
 
 def open_url_incognito(url: str, cookies_str: Optional[str] = None) -> bool:
-    """用 Playwright 以无痕模式打开 URL，可注入 cookie"""
+    """Open URL in Playwright incognito mode, optionally injecting cookies"""
     import threading
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        logger.warning("playwright 未安装，回退到系统浏览器")
+        logger.warning("playwright not installed, falling back to system browser")
         return _open_url_system_browser(url)
 
     def _launch():
@@ -315,10 +315,10 @@ def open_url_incognito(url: str, cookies_str: Optional[str] = None) -> bool:
                     ctx.add_cookies(_parse_cookie_str(cookies_str, "chatgpt.com"))
                 page = ctx.new_page()
                 page.goto(url)
-                # 保持窗口打开直到用户关闭
-                page.wait_for_timeout(300_000)  # 最多等待 5 分钟
+                # Keep window open until user closes it
+                page.wait_for_timeout(300_000)  # Wait up to 5 minutes
         except Exception as e:
-            logger.warning(f"Playwright 无痕打开失败: {e}")
+            logger.warning(f"Playwright incognito open failed: {e}")
 
     threading.Thread(target=_launch, daemon=True).start()
     return True
@@ -326,7 +326,7 @@ def open_url_incognito(url: str, cookies_str: Optional[str] = None) -> bool:
 
 def check_subscription_status(account: Account, proxy: Optional[str] = None) -> str:
     """
-    检测账号当前订阅状态。
+    Check current subscription status of the account.
 
     Returns:
         'free' / 'plus' / 'team'
@@ -337,7 +337,7 @@ def check_subscription_status(account: Account, proxy: Optional[str] = None) -> 
 def fetch_subscription_status_details(account: Account, proxy: Optional[str] = None) -> dict:
     """Return normalized subscription status plus raw usage data when available."""
     if not account.access_token:
-        raise ValueError("账号缺少 access_token")
+        raise ValueError("Account missing access_token")
 
     headers = {
         "Authorization": f"Bearer {account.access_token}",

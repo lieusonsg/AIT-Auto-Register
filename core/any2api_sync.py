@@ -1,7 +1,8 @@
-"""注册完成后自动推送账号到 Any2API 实例。
+"""Auto-push accounts to Any2API instance after registration.
 
-在全局配置中设置 Any2API 的地址和管理密码后，
-每次注册成功都会自动将账号推送到 Any2API，无需手动导出导入。
+After configuring the Any2API address and admin password in global settings,
+each successful registration will automatically push the account to Any2API,
+eliminating the need for manual export/import.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class Any2ApiClient:
-    """Any2API 管理 API 客户端。"""
+    """Any2API admin API client."""
 
     def __init__(self, base_url: str, password: str, *, timeout: int = 10):
         self.base_url = base_url.rstrip("/")
@@ -39,10 +40,10 @@ class Any2ApiClient:
                         "newplatform2api_admin_session", ""
                     ) or data.get("token", "")
                     return True
-            logger.warning(f"[Any2API] 登录失败: HTTP {resp.status_code}")
+            logger.warning(f"[Any2API] Login failed: HTTP {resp.status_code}")
             return False
         except Exception as exc:
-            logger.warning(f"[Any2API] 登录异常: {exc}")
+            logger.warning(f"[Any2API] Login exception: {exc}")
             return False
 
     def _headers(self) -> dict:
@@ -83,7 +84,7 @@ class Any2ApiClient:
                 )
             return resp.json() if resp.status_code == 200 else None
         except Exception as exc:
-            logger.warning(f"[Any2API] POST {path} 失败: {exc}")
+            logger.warning(f"[Any2API] POST {path} failed: {exc}")
             return None
 
     def _put(self, path: str, body: dict) -> Optional[dict]:
@@ -110,7 +111,7 @@ class Any2ApiClient:
                 )
             return resp.json() if resp.status_code == 200 else None
         except Exception as exc:
-            logger.warning(f"[Any2API] PUT {path} 失败: {exc}")
+            logger.warning(f"[Any2API] PUT {path} failed: {exc}")
             return None
 
     def push_kiro(self, access_token: str, *, name: str = "", machine_id: str = "") -> bool:
@@ -168,7 +169,7 @@ class Any2ApiClient:
 
 
 def _get_any2api_config() -> tuple[str, str]:
-    """从全局配置读取 Any2API 地址和密码。"""
+    """Read Any2API address and password from global configuration."""
     try:
         from core.config_store import config_store
         base_url = config_store.get("any2api_url", "")
@@ -179,11 +180,11 @@ def _get_any2api_config() -> tuple[str, str]:
 
 
 def push_account_to_any2api(account: Any, *, log_fn=None) -> bool:
-    """注册完成后自动推送账号到 Any2API。
+    """Auto-push account to Any2API after registration.
 
     Args:
-        account: BasePlatform.Account 对象
-        log_fn: 日志函数
+        account: BasePlatform.Account object
+        log_fn: log function
 
     Returns:
         True if pushed successfully, False otherwise (including when not configured)
@@ -205,7 +206,7 @@ def push_account_to_any2api(account: Any, *, log_fn=None) -> bool:
             if access_token:
                 ok = client.push_kiro(access_token, name=email)
                 if ok:
-                    log(f"  [Any2API] ✓ Kiro 账号已推送")
+                    log(f"  [Any2API] ✓ Kiro account pushed")
                 return ok
 
         elif platform == "grok":
@@ -213,7 +214,7 @@ def push_account_to_any2api(account: Any, *, log_fn=None) -> bool:
             if sso:
                 ok = client.push_grok(sso, name=email)
                 if ok:
-                    log(f"  [Any2API] ✓ Grok 账号已推送")
+                    log(f"  [Any2API] ✓ Grok account pushed")
                 return ok
 
         elif platform == "cursor":
@@ -221,7 +222,7 @@ def push_account_to_any2api(account: Any, *, log_fn=None) -> bool:
             if token:
                 ok = client.push_cursor(token)
                 if ok:
-                    log(f"  [Any2API] ✓ Cursor 账号已推送")
+                    log(f"  [Any2API] ✓ Cursor account pushed")
                 return ok
 
         elif platform == "chatgpt":
@@ -229,7 +230,7 @@ def push_account_to_any2api(account: Any, *, log_fn=None) -> bool:
             if token:
                 ok = client.push_chatgpt(token)
                 if ok:
-                    log(f"  [Any2API] ✓ ChatGPT 账号已推送")
+                    log(f"  [Any2API] ✓ ChatGPT account pushed")
                 return ok
 
         elif platform == "blink":
@@ -242,7 +243,7 @@ def push_account_to_any2api(account: Any, *, log_fn=None) -> bool:
                     workspace_slug=extra.get("workspace_slug", ""),
                 )
                 if ok:
-                    log(f"  [Any2API] ✓ Blink 账号已推送")
+                    log(f"  [Any2API] ✓ Blink account pushed")
                 return ok
 
         elif platform == "windsurf":
@@ -279,15 +280,15 @@ def push_account_to_any2api(account: Any, *, log_fn=None) -> bool:
                     proxy_url=extra.get("proxy_url", "") or extra.get("proxyUrl", ""),
                 )
                 if ok:
-                    log(f"  [Any2API] ✓ Windsurf 账号已推送")
+                    log(f"  [Any2API] ✓ Windsurf account pushed")
                 return ok
 
         else:
-            log(f"  [Any2API] 平台 {platform} 暂不支持自动推送")
+            log(f"  [Any2API] Platform {platform} does not support auto-push")
             return False
 
     except Exception as exc:
-        log(f"  [Any2API] 推送失败: {exc}")
+        log(f"  [Any2API] Push failed: {exc}")
         return False
 
     return False

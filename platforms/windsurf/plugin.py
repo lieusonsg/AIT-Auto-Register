@@ -1,4 +1,4 @@
-"""Windsurf 平台插件。"""
+"""Windsurf platform plugin."""
 from __future__ import annotations
 
 import random
@@ -41,30 +41,30 @@ class WindsurfPlatform(BasePlatform):
     supported_identity_modes = ["mailbox"]
     protocol_captcha_order = ("2captcha", "capsolver", "auto")
     capabilities = [
-        "query_state",              # 查询账号状态/额度
-        "check_trial",              # 检查 Pro Trial 资格
-        "generate_link",            # 生成 Pro Trial Stripe 链接（自动打码）
-        "generate_link_browser",    # 生成 Pro Trial Stripe 链接（浏览器）
-        "switch_desktop",           # 切换到桌面应用
+        "query_state",              # Query account status/credits
+        "check_trial",              # Check Pro Trial eligibility
+        "generate_link",            # Generate Pro Trial Stripe link (auto-captcha)
+        "generate_link_browser",    # Generate Pro Trial Stripe link (browser)
+        "switch_desktop",           # Switch to desktop app
     ]
     capability_overrides = {
         "generate_link": {
-            "label": "生成 Pro Trial 链接（自动打码）",
+            "label": "Generate Pro Trial link (auto captcha)",
             "params": [
-                {"key": "turnstile_token", "label": "Turnstile Token（可空，自动打码）", "type": "text"},
+                {"key": "turnstile_token", "label": "Turnstile Token (optional, auto captcha)", "type": "text"},
             ],
         },
         "generate_link_browser": {
-            "label": "生成 Pro Trial 链接（浏览器）",
+            "label": "Generate Pro Trial link (browser)",
             "params": [
-                {"key": "turnstile_token", "label": "Turnstile Token（可空，自动打码）", "type": "text"},
-                {"key": "timeout", "label": "等待秒数（默认 180）", "type": "number"},
-                {"key": "headless", "label": "无头模式", "type": "text", "options": ["false", "true"]},
+                {"key": "turnstile_token", "label": "Turnstile Token (optional, auto captcha)", "type": "text"},
+                {"key": "timeout", "label": "Timeout in seconds (default 180)", "type": "number"},
+                {"key": "headless", "label": "Headless mode", "type": "text", "options": ["false", "true"]},
             ],
             "sync": False,
         },
         "switch_desktop": {
-            "label": "切换桌面应用（纯协议）",
+            "label": "Switch desktop app (pure protocol)",
         },
     }
 
@@ -112,8 +112,8 @@ class WindsurfPlatform(BasePlatform):
             otp_spec=OtpSpec(
                 keyword="Windsurf",
                 code_pattern=r"\b(\d{6})\b",
-                wait_message="等待 Windsurf 邮箱验证码...",
-                success_label="验证码",
+                wait_message="Waiting for Windsurf email verification code...",
+                success_label="Verification code",
                 timeout=resolve_timeout(self.config.extra or {}, ("otp_timeout",), 120),
             ),
         )
@@ -143,8 +143,8 @@ class WindsurfPlatform(BasePlatform):
             otp_spec=OtpSpec(
                 keyword="Windsurf",
                 code_pattern=r"\b(\d{6})\b",
-                wait_message="等待 Windsurf 邮箱验证码...",
-                success_label="验证码",
+                wait_message="Waiting for Windsurf email verification code...",
+                success_label="Verification code",
                 timeout=resolve_timeout(self.config.extra or {}, ("otp_timeout",), 120),
             ),
         )
@@ -179,9 +179,9 @@ class WindsurfPlatform(BasePlatform):
         """
         Handle switch_desktop capability for Windsurf.
 
-        纯协议实现：
-        1. 用 session_token 调 GetOneTimeAuthToken → 获取 OTT
-        2. 通过 windsurf:// deep link 传给 Windsurf → 完成认证切换
+        Pure protocol implementation:
+        1. Use session_token to call GetOneTimeAuthToken -> obtain OTT
+        2. Pass OTT to Windsurf via windsurf:// deep link -> complete auth switch
         """
         from platforms.windsurf.core import extract_windsurf_account_context
         from platforms.windsurf.switch import (
@@ -192,9 +192,9 @@ class WindsurfPlatform(BasePlatform):
         context = extract_windsurf_account_context(account)
         session_token = context["session_token"]
         if not session_token:
-            return {"ok": False, "error": "账号缺少 session_token"}
+            return {"ok": False, "error": "Account missing session_token"}
 
-        self.log(f"正在切换到: {account.email}")
+        self.log(f"Switching to: {account.email}")
         proxy = self.config.proxy if self.config else None
         ok, msg = switch_windsurf_account(session_token=session_token, proxy=proxy)
 
@@ -213,13 +213,13 @@ class WindsurfPlatform(BasePlatform):
     def _handle_generate_link_browser(self, account: Account, params: dict) -> dict:
         """Handle generate_link_browser capability for Windsurf."""
         if not str(account.password or "").strip():
-            return {"ok": False, "error": "账号缺少 Windsurf 密码，无法执行浏览器自动化"}
+            return {"ok": False, "error": "Account missing Windsurf password, cannot perform browser automation"}
 
         turnstile_token = str(params.get("turnstile_token") or "").strip()
         if turnstile_token:
-            self.log("使用提供的 Turnstile token 作为浏览器流程回退")
+            self.log("Using provided Turnstile token as browser flow fallback")
         else:
-            self.log("未提供 Turnstile token，将在页面上自动过验证")
+            self.log("No Turnstile token provided, will auto-solve captcha on page")
         headless_param = params.get("headless")
         if headless_param in (None, ""):
             headless = self.config.executor_type == "headless"
@@ -241,7 +241,7 @@ class WindsurfPlatform(BasePlatform):
             "ok": True,
             "data": {
                 **result,
-                "message": "Windsurf Pro Trial Stripe 链接已生成",
+                "message": "Windsurf Pro Trial Stripe link generated",
             },
         }
 
@@ -285,7 +285,7 @@ class WindsurfPlatform(BasePlatform):
         turnstile_token = str(params.get("turnstile_token") or "").strip()
         if not turnstile_token:
             try:
-                self.log("Auto-getting Windsurf Turnstile token...")
+                self.log("Auto-obtaining Windsurf Turnstile token...")
                 turnstile_token = self.solve_turnstile_with_fallback(
                     f"{WINDSURF_BASE}/pricing",
                     WINDSURF_TURNSTILE_SITEKEY,

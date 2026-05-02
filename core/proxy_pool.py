@@ -1,4 +1,4 @@
-"""代理池 - 从数据库读取代理，支持轮询和按区域选取"""
+"""Proxy pool - reads proxies from database, supports round-robin and region-based selection"""
 from typing import Optional
 from sqlmodel import Session, select
 from .db import ProxyModel, engine
@@ -12,13 +12,13 @@ class ProxyPool:
         self._lock = threading.Lock()
 
     def get_next(self, region: str = "") -> Optional[str]:
-        """获取下一个可用代理。
+        """Get the next available proxy.
 
-        优先级:
-          1. 动态代理 provider（如果已配置且启用）
-          2. 静态代理池（数据库中的固定代理列表）
+        Priority:
+          1. Dynamic proxy provider (if configured and enabled)
+          2. Static proxy pool (fixed proxy list from database)
         """
-        # 1. 尝试动态代理
+        # 1. Try dynamic proxy
         try:
             from core.proxy_providers import get_dynamic_proxy
             dynamic = get_dynamic_proxy()
@@ -27,7 +27,7 @@ class ProxyPool:
         except Exception:
             pass
 
-        # 2. 回退到静态代理池
+        # 2. Fallback to static proxy pool
         with Session(engine) as s:
             q = select(ProxyModel).where(ProxyModel.is_active == True)
             if region:
@@ -59,14 +59,14 @@ class ProxyPool:
             if p:
                 p.fail_count += 1
                 p.last_checked = datetime.now(timezone.utc)
-                # 连续失败超过10次自动禁用
+                # Auto-disable after consecutive failures with zero successes
                 if p.fail_count > 0 and p.success_count == 0 and p.fail_count >= 5:
                     p.is_active = False
                 s.add(p)
                 s.commit()
 
     def check_all(self) -> dict:
-        """检测所有代理可用性"""
+        """Check availability of all proxies"""
         import requests
         with Session(engine) as s:
             proxies = s.exec(select(ProxyModel)).all()

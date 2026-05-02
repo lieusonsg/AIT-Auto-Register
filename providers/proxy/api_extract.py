@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 
 @register_provider("proxy", "api_extract")
 class ApiExtractProvider(BaseProxyProvider):
-    """通用 API 提取模式 — 调用一个 URL 返回代理 IP 列表。
+    """Generic API extract pattern — call a URL that returns a proxy IP list.
 
-    适用于大多数代理商的"API 提取"接口，返回格式通常是:
-      - 每行一个 IP:PORT
-      - 或 JSON 数组
+    Suitable for most proxy providers' "API Extract" interface, return format is typically:
+      - One IP:PORT per line
+      - Or a JSON array
     """
 
     def __init__(
@@ -43,7 +43,7 @@ class ApiExtractProvider(BaseProxyProvider):
     def from_config(cls, config: dict) -> 'ApiExtractProvider':
         api_url = config.get("proxy_api_url", "")
         if not api_url:
-            raise RuntimeError("动态代理未配置 API URL")
+            raise RuntimeError("Dynamic proxy API URL not configured")
         return cls(
             api_url=api_url,
             protocol=config.get("proxy_protocol", "http"),
@@ -52,13 +52,13 @@ class ApiExtractProvider(BaseProxyProvider):
         )
 
     def _fetch(self) -> list[str]:
-        """从 API 获取代理列表。"""
+        """Fetch proxy list from API."""
         try:
             resp = proxy_providers.requests.get(self.api_url, timeout=self.timeout)
             resp.raise_for_status()
             text = resp.text.strip()
         except Exception as exc:
-            logger.warning(f"[ProxyProvider] API 请求失败: {exc}")
+            logger.warning(f"[ProxyProvider] API request failed: {exc}")
             return []
 
         # Try JSON first

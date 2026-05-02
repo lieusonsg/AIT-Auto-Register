@@ -1,4 +1,4 @@
-"""账号生命周期管理 API。"""
+"""Account lifecycle management API."""
 from __future__ import annotations
 
 from fastapi import APIRouter
@@ -29,28 +29,28 @@ class WarningRequest(BaseModel):
 
 @router.post("/check")
 def trigger_validity_check(body: CheckRequest):
-    """手动触发账号有效性批量检测。"""
+    """Manually trigger batch account validity check."""
     results = check_accounts_validity(platform=body.platform, limit=body.limit)
     return {"ok": True, "data": results}
 
 
 @router.post("/refresh")
 def trigger_token_refresh(body: RefreshRequest):
-    """手动触发 token 批量刷新。"""
+    """Manually trigger batch token refresh."""
     results = refresh_expiring_tokens(platform=body.platform, limit=body.limit)
     return {"ok": True, "data": results}
 
 
 @router.post("/warn")
 def trigger_expiry_warning(body: WarningRequest):
-    """手动触发过期预警扫描。"""
+    """Manually trigger expiry warning scan."""
     results = flag_expiring_trials(hours_warning=body.hours)
     return {"ok": True, "data": results}
 
 
 @router.get("/status")
 def lifecycle_status():
-    """返回生命周期管理器运行状态。"""
+    """Return lifecycle manager running status."""
     from core.lifecycle import lifecycle_manager
     return {
         "running": lifecycle_manager._running,

@@ -1,4 +1,4 @@
-"""Trae.ai 注册协议核心实现"""
+"""Trae.ai registration protocol core implementation"""
 import random, string
 from typing import Optional, Callable
 
@@ -34,24 +34,24 @@ class TraeRegister:
                      params=_base_params(), data={"type": "2"})
 
     def step2_send_code(self, email: str):
-        self.log("发送验证码...")
+        self.log("Sending verification code...")
         r = self.ex.post(f"{BASE_URL}/passport/web/email/send_code/",
                          params=_base_params(),
                          data={"type": "1", "email": email,
                                "password": "", "email_logic_type": "2"})
         if r.json().get("message") != "success":
-            raise RuntimeError(f"send_code 失败: {r.text}")
-        self.log("验证码已发送，等待邮件...")
+            raise RuntimeError(f"send_code failed: {r.text}")
+        self.log("Verification code sent, waiting for email...")
 
     def step3_register(self, email: str, password: str, otp: str):
-        self.log(f"提交注册... otp={otp}")
+        self.log(f"Submitting registration... otp={otp}")
         r = self.ex.post(f"{BASE_URL}/passport/web/email/register_verify_login/",
                          params=_base_params(),
                          data={"type": "1", "email": email, "password": password,
                                "code": otp, "email_logic_type": "2"})
         j = r.json()
         if j.get("message") != "success" and not j.get("data", {}).get("user_id_str"):
-            raise RuntimeError(f"register 失败: {r.text}")
+            raise RuntimeError(f"register failed: {r.text}")
         return j["data"]["user_id_str"]
 
     def step4_trae_login(self):
@@ -77,8 +77,8 @@ class TraeRegister:
                              json={"product_ids": ["2"],
                                    "result_url": "https://www.trae.ai/account-setting"
                                                  "?type=upgrade&identity=1#subscription"})
-            self.log(f"  create_order status={r.status_code} resp={r.text[:200]}")
+            self.log(f"  create_order status={r.status_code} resp={r.text[:200]}")  # noqa: E501
             return r.json().get("order_info", {}).get("cashier_url", "")
         except Exception as e:
-            self.log(f"  create_order 失败: {e}")
+            self.log(f"  create_order failed: {e}")
             return ""

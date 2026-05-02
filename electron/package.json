@@ -1,7 +1,7 @@
 {
-  "name": "any-auto-register",
+  "name": "ait-auto-register",
   "version": "1.0.0",
-  "description": "Any Auto Register - 多平台账号自动注册管理工具",
+  "description": "AIT Auto Register - Multi-platform account auto-registration and management tool",
   "main": "main.js",
   "scripts": {
     "dev": "electron .",

@@ -2,14 +2,14 @@ from __future__ import annotations
 
 
 EXECUTOR_LABELS = {
-    "protocol": "协议模式",
-    "headless": "后台浏览器自动",
-    "headed": "可视浏览器自动",
+    "protocol": "Protocol mode",
+    "headless": "Background browser auto",
+    "headed": "Visible browser auto",
 }
 
 IDENTITY_MODE_LABELS = {
-    "mailbox": "系统邮箱",
-    "oauth_browser": "第三方账号",
+    "mailbox": "System mailbox",
+    "oauth_browser": "Third-party account",
 }
 
 OAUTH_PROVIDER_LABELS = {
@@ -90,35 +90,35 @@ PLATFORM_SEEDS: list[dict] = [
 ]
 
 PERMISSION_SEEDS: list[dict] = [
-    {"permission_code": "admin:*", "permission_name": "管理员全部权限"},
-    {"permission_code": "admin:user:read", "permission_name": "查看用户"},
-    {"permission_code": "admin:user:write", "permission_name": "编辑用户"},
-    {"permission_code": "admin:platform:read", "permission_name": "查看平台"},
-    {"permission_code": "admin:config:read", "permission_name": "查看配置"},
-    {"permission_code": "admin:config:write", "permission_name": "修改配置"},
-    {"permission_code": "admin:task:read", "permission_name": "查看任务"},
-    {"permission_code": "admin:account:read", "permission_name": "查看账号"},
-    {"permission_code": "admin:account:write", "permission_name": "编辑账号"},
-    {"permission_code": "admin:proxy:read", "permission_name": "查看代理"},
-    {"permission_code": "admin:proxy:write", "permission_name": "编辑代理"},
-    {"permission_code": "admin:order:read", "permission_name": "查看订单"},
-    {"permission_code": "admin:subscription:read", "permission_name": "查看订阅"},
-    {"permission_code": "app:platform:view", "permission_name": "查看用户平台"},
-    {"permission_code": "app:task:create", "permission_name": "创建用户任务"},
-    {"permission_code": "app:task:view_self", "permission_name": "查看自己的任务"},
-    {"permission_code": "app:order:view_self", "permission_name": "查看自己的订单"},
-    {"permission_code": "app:order:create", "permission_name": "创建自己的订单"},
-    {"permission_code": "app:payment:submit", "permission_name": "提交自己的支付"},
-    {"permission_code": "app:subscription:view_self", "permission_name": "查看自己的订阅"},
-    {"permission_code": "app:profile:view_self", "permission_name": "查看自己的资料"},
-    {"permission_code": "app:profile:update_self", "permission_name": "更新自己的资料"},
-    {"permission_code": "payment:callback", "permission_name": "支付回调"},
+    {"permission_code": "admin:*", "permission_name": "Full admin privileges"},
+    {"permission_code": "admin:user:read", "permission_name": "View users"},
+    {"permission_code": "admin:user:write", "permission_name": "Edit users"},
+    {"permission_code": "admin:platform:read", "permission_name": "View platforms"},
+    {"permission_code": "admin:config:read", "permission_name": "View configuration"},
+    {"permission_code": "admin:config:write", "permission_name": "Modify configuration"},
+    {"permission_code": "admin:task:read", "permission_name": "View tasks"},
+    {"permission_code": "admin:account:read", "permission_name": "View accounts"},
+    {"permission_code": "admin:account:write", "permission_name": "Edit accounts"},
+    {"permission_code": "admin:proxy:read", "permission_name": "View proxies"},
+    {"permission_code": "admin:proxy:write", "permission_name": "Edit proxies"},
+    {"permission_code": "admin:order:read", "permission_name": "View orders"},
+    {"permission_code": "admin:subscription:read", "permission_name": "View subscriptions"},
+    {"permission_code": "app:platform:view", "permission_name": "View user platforms"},
+    {"permission_code": "app:task:create", "permission_name": "Create user tasks"},
+    {"permission_code": "app:task:view_self", "permission_name": "View own tasks"},
+    {"permission_code": "app:order:view_self", "permission_name": "View own orders"},
+    {"permission_code": "app:order:create", "permission_name": "Create own orders"},
+    {"permission_code": "app:payment:submit", "permission_name": "Submit own payments"},
+    {"permission_code": "app:subscription:view_self", "permission_name": "View own subscriptions"},
+    {"permission_code": "app:profile:view_self", "permission_name": "View own profile"},
+    {"permission_code": "app:profile:update_self", "permission_name": "Update own profile"},
+    {"permission_code": "payment:callback", "permission_name": "Payment callback"},
 ]
 
 ROLE_SEEDS: list[dict] = [
     {
         "role_code": "admin",
-        "role_name": "管理员",
+        "role_name": "Administrator",
         "permissions": [
             "admin:*",
             "admin:user:read",
@@ -144,7 +144,7 @@ ROLE_SEEDS: list[dict] = [
     },
     {
         "role_code": "user",
-        "role_name": "普通用户",
+        "role_name": "Regular user",
         "permissions": [
             "app:platform:view",
             "app:task:create",

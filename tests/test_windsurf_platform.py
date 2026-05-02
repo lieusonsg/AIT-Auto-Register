@@ -313,7 +313,7 @@ def test_windsurf_generate_trial_link_refreshes_session_after_subscribe_401(monk
         ) -> dict[str, str]:
             calls.append((session_token, account_id))
             if len(calls) == 1:
-                raise RuntimeError('SubscribeToPlan 失败: HTTP 401 {"code":"unauthenticated"}')
+                raise RuntimeError('SubscribeToPlan failed: HTTP 401 {"code":"unauthenticated"}')
             assert session_token == "devin-session-token-refreshed"
             assert account_id == "account-refreshed"
             assert org_id == "org-refreshed"
@@ -440,7 +440,7 @@ def test_windsurf_payment_link_browser_uses_checkout_ui_flow(monkeypatch):
     assert result["data"]["payment_channel"] == "checkout"
     assert result["data"]["cashier_url"] == "https://checkout.stripe.com/c/pay/cs_test_ui"
     assert result["data"]["checkout_url"] == "https://checkout.stripe.com/c/pay/cs_test_ui"
-    assert result["data"]["message"] == "Windsurf Pro Trial Stripe 链接已生成"
+    assert result["data"]["message"] == "Windsurf Pro Trial Stripe link generated"
 
 
 def test_windsurf_payment_link_browser_can_return_checkout_only(monkeypatch):
@@ -470,7 +470,7 @@ def test_windsurf_payment_link_browser_can_return_checkout_only(monkeypatch):
     assert result["ok"] is True
     assert result["data"]["payment_channel"] == "checkout"
     assert result["data"]["cashier_url"] == "https://checkout.stripe.com/c/pay/cs_test_checkout_only"
-    assert result["data"]["message"] == "Windsurf Pro Trial Stripe 链接已生成"
+    assert result["data"]["message"] == "Windsurf Pro Trial Stripe link generated"
 
 
 def test_local_solver_surfaces_unsolvable_error(monkeypatch):

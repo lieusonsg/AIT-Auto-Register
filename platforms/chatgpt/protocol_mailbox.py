@@ -1,4 +1,4 @@
-"""ChatGPT 协议邮箱注册 worker。"""
+"""ChatGPT protocol mailbox registration worker."""
 from __future__ import annotations
 
 from typing import Callable
@@ -44,7 +44,7 @@ class ChatGPTProtocolMailboxWorker:
         log_fn: Callable[[str], None] = print,
     ):
         if not mailbox or not mailbox_account:
-            raise ValueError("ChatGPT 注册流程依赖 mailbox provider，当前未获取到邮箱账号")
+            raise ValueError("ChatGPT registration flow depends on a mailbox provider, but no mailbox account was obtained")
         email_service = _MailboxEmailService(
             mailbox=mailbox,
             mailbox_account=mailbox_account,
@@ -61,5 +61,5 @@ class ChatGPTProtocolMailboxWorker:
         self.engine.password = password
         result = self.engine.run()
         if not result or not result.success:
-            raise RuntimeError(result.error_message if result else "注册失败")
+            raise RuntimeError(result.error_message if result else "Registration failed")
         return result

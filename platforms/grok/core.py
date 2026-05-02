@@ -1,5 +1,5 @@
 """
-Grok (x.ai) 自动注册 - 纯协议实现
+Grok (x.ai) auto-registration - pure protocol implementation
 """
 import re, struct, random, string, time
 from curl_cffi import requests as cffi_requests
@@ -63,7 +63,7 @@ class GrokRegister:
         return r.content
 
     def _solve_turnstile(self) -> str:
-        self.log("获取 Turnstile token...")
+        self.log("Getting Turnstile token...")
         solver = self.captcha_solver
         if not solver:
             from core.base_captcha import YesCaptcha
@@ -73,23 +73,23 @@ class GrokRegister:
         return token
 
     def step1_send_otp(self, email: str):
-        self.log(f"Step1: 发送验证码到 {email}...")
+        self.log(f"Step1: Sending verification code to {email}...")
         body = _pb_string(1, email)
         self._grpc_post('/auth_mgmt.AuthManagement/CreateEmailValidationCode', body)
-        self.log("  验证码已发送")
+        self.log("  Verification code sent")
 
     def step2_verify_otp(self, email: str, code: str) -> bool:
-        self.log(f"Step2: 验证码校验 {code}...")
+        self.log(f"Step2: Verifying code {code}...")
         body = _pb_string(1, email) + _pb_string(2, code)
         resp = self._grpc_post('/auth_mgmt.AuthManagement/VerifyEmailValidationCode', body)
         ok = b'grpc-status:0' in resp
-        self.log(f"  校验: {'OK' if ok else 'FAIL'}")
+        self.log(f"  Verification: {'OK' if ok else 'FAIL'}")
         return ok
 
     def step3_signup(self, email: str, password: str, code: str,
                      given_name: str, family_name: str) -> str:
         turnstile = self._solve_turnstile()
-        self.log("Step3: 提交注册...")
+        self.log("Step3: Submitting registration...")
         payload = [{
             'emailValidationCode': code,
             'createUserAndSessionRequest': {
@@ -111,7 +111,7 @@ class GrokRegister:
         return r.text
 
     def step4_set_cookies(self, signup_body: str):
-        self.log("Step4: 设置 session cookies...")
+        self.log("Step4: Setting session cookies...")
         urls = re.findall(r'https://auth\.[^"\s\\]+/set-cookie[^"\s\\]*', signup_body)
         for url in urls:
             url = url.replace('\\u0026', '&').replace('\\u003d', '=')

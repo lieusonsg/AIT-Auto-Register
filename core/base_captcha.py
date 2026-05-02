@@ -1,16 +1,16 @@
-"""验证码解决器基类 — 具体实现已迁移到 providers/captcha/"""
+"""Captcha solver base class — concrete implementations moved to providers/captcha/"""
 from abc import ABC, abstractmethod
 
 
 class BaseCaptcha(ABC):
     @abstractmethod
     def solve_turnstile(self, page_url: str, site_key: str) -> str:
-        """返回 Turnstile token"""
+        """Return Turnstile token"""
         ...
 
     @abstractmethod
     def solve_image(self, image_b64: str) -> str:
-        """返回图片验证码文字"""
+        """Return image captcha text"""
         ...
 
 
@@ -78,7 +78,7 @@ def create_captcha_solver(provider_key: str, extra: dict | None = None) -> BaseC
 
     definition = ProviderDefinitionsRepository().get_by_key("captcha", key)
     if not definition or not definition.enabled:
-        raise RuntimeError(f"验证码 provider 不存在或未启用: {key}")
+        raise RuntimeError(f"Captcha provider does not exist or is not enabled: {key}")
     merged = ProviderSettingsRepository().resolve_runtime_settings("captcha", key, extra or {})
     driver_type = (definition.driver_type if definition else key).lower()
 
@@ -87,11 +87,11 @@ def create_captcha_solver(provider_key: str, extra: dict | None = None) -> BaseC
     if driver_type == "yescaptcha_api":
         client_key = str(merged.get("yescaptcha_key", "") or "")
         if not client_key:
-            raise RuntimeError("YesCaptcha Key 未配置，无法继续协议注册")
+            raise RuntimeError("YesCaptcha Key not configured, cannot continue protocol registration")
         return YesCaptcha(client_key)
     if driver_type == "twocaptcha_api":
         api_key = str(merged.get("twocaptcha_key", "") or "")
         if not api_key:
-            raise RuntimeError("2Captcha Key 未配置，无法继续协议注册")
+            raise RuntimeError("2Captcha Key not configured, cannot continue protocol registration")
         return TwoCaptcha(api_key)
-    raise ValueError(f"未知验证码解决器: {provider_key}")
+    raise ValueError(f"Unknown captcha solver: {provider_key}")

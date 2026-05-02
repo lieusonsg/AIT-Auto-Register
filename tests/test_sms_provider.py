@@ -46,7 +46,7 @@ class TestCreateSmsProvider:
         assert provider.api_key == "test123"
 
     def test_sms_activate_missing_key(self):
-        with pytest.raises(RuntimeError, match="未配置"):
+        with pytest.raises(RuntimeError, match="not configured"):
             create_sms_provider("sms_activate", {})
 
     def test_herosms(self):
@@ -68,11 +68,11 @@ class TestCreateSmsProvider:
         assert provider.reuse_phone_to_max is False
 
     def test_herosms_missing_key(self):
-        with pytest.raises(RuntimeError, match="HeroSMS 未配置"):
+        with pytest.raises(RuntimeError, match="HeroSMS not configured"):
             create_sms_provider("herosms", {})
 
     def test_unknown_provider(self):
-        with pytest.raises(RuntimeError, match="未知"):
+        with pytest.raises(RuntimeError, match="unknown"):
             create_sms_provider("unknown", {})
 
 
@@ -123,9 +123,9 @@ class TestCreatePhoneCallbacks:
         cleanup()
         assert ("get_number", "chatgpt", "us") in events
         assert ("cancel", "act_1") in events
-        assert any("准备租用手机号" in item for item in logs)
-        assert any("已成功租到号码" in item for item in logs)
-        assert any("已释放未使用号码" in item for item in logs)
+        assert any("preparing to rent phone number" in item for item in logs)
+        assert any("successfully rented number" in item for item in logs)
+        assert any("released unused number" in item for item in logs)
 
     def test_cleanup_does_not_cancel_after_success(self, monkeypatch):
         events = []
@@ -162,8 +162,8 @@ class TestCreatePhoneCallbacks:
         cleanup()
         assert ("report_success", "act_2") in events
         assert ("cancel", "act_2") not in events
-        assert any("等待短信验证码" in item for item in logs)
-        assert any("短信验证成功" in item for item in logs)
+        assert any("waiting for SMS verification code" in item for item in logs)
+        assert any("SMS verification succeeded" in item for item in logs)
 
     def test_deferred_success_provider_reports_on_cleanup_for_legacy_callers(self, monkeypatch):
         events = []
@@ -304,7 +304,7 @@ class TestSmsActivateProviderCountryResolution:
         monkeypatch.setattr(SmsActivateProvider, "_request", fake_request)
         provider = SmsActivateProvider("test123", default_country="ru")
 
-        with pytest.raises(RuntimeError, match="NO_NUMBERS|无可用号码"):
+        with pytest.raises(RuntimeError, match="NO_NUMBERS|no available numbers"):
             provider.get_number(service="chatgpt", country="52")
 
         assert captured["action"] == "getNumber"

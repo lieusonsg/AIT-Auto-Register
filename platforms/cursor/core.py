@@ -1,4 +1,4 @@
-"""Cursor 注册协议核心实现"""
+"""Cursor registration protocol core implementation"""
 import re, uuid, json, urllib.parse, random, string
 from typing import Optional, Callable
 
@@ -82,7 +82,7 @@ class CursorRegister:
     def step3_submit_password(self, password, email, state_encoded, captcha_solver=None):
         captcha_token = ""
         if captcha_solver:
-            self.log("获取 Turnstile token...")
+            self.log("Getting Turnstile token...")
             captcha_token = captcha_solver.solve_turnstile(AUTH, TURNSTILE_SITEKEY)
         bd = _boundary()
         referer = f"{AUTH}/sign-up?state={state_encoded}"
@@ -117,5 +117,5 @@ class CursorRegister:
                 return urllib.parse.unquote(cookie.value)
         return ""
 
-# CursorBrowserRegister 统一从 browser_register.py 导入，避免代码重复
+# CursorBrowserRegister is imported from browser_register.py to avoid code duplication
 from platforms.cursor.browser_register import CursorBrowserRegister  # noqa: F401

@@ -14,12 +14,12 @@ service = SystemService()
 
 _RELEASE_API = "https://api.github.com/repos/lxf746/any-auto-register/releases/latest"
 _VERSION_CACHE: dict = {}
-_VERSION_CACHE_TTL = 600  # 10 分钟，避免 GitHub API rate limit (60/h unauth)
+_VERSION_CACHE_TTL = 600  # 10 minutes, avoid GitHub API rate limit (60/h unauth)
 _VERSION_CACHE_LOCK = threading.Lock()
 
 
 def _fetch_latest_release() -> dict | None:
-    """拉 GitHub 最新 release，10min 缓存。"""
+    """Fetch latest GitHub release, with 10min cache."""
     now = time.time()
     with _VERSION_CACHE_LOCK:
         cached = _VERSION_CACHE.get("data")
@@ -47,7 +47,7 @@ def _fetch_latest_release() -> dict | None:
 
 
 def _is_newer(latest: str, current: str) -> bool:
-    """比较语义化版本号；任一解析失败则比字符串。"""
+    """Compare semantic version numbers; fall back to string comparison if parsing fails."""
     def parse(s: str) -> tuple:
         parts = []
         for chunk in str(s or "").split("."):
@@ -80,7 +80,7 @@ def solver_restart():
 
 @router.get("/version")
 def get_version():
-    """返回当前版本与 GitHub 最新 release。前端用此判断是否提示更新。"""
+    """Return current version and latest GitHub release. Used by frontend to prompt updates."""
     current = __version__
     latest = _fetch_latest_release()
     has_update = bool(latest and _is_newer(latest.get("tag", ""), current))

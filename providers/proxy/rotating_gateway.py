@@ -9,11 +9,11 @@ from providers.registry import register_provider
 
 @register_provider("proxy", "rotating_gateway")
 class RotatingProxyProvider(BaseProxyProvider):
-    """固定入口旋转代理 — 每次请求自动分配不同 IP。
+    """Fixed-entry rotating proxy — each request is automatically assigned a different IP.
 
-    适用于提供固定网关地址的代理商（如 BrightData、Oxylabs、IPRoyal 等），
-    格式通常是: http://user:pass@gate.provider.com:port
-    每次通过该网关发出的请求会自动使用不同的出口 IP。
+    Suitable for proxy providers that offer a fixed gateway address (e.g., BrightData, Oxylabs, IPRoyal, etc.),
+    format is typically: http://user:pass@gate.provider.com:port
+    Each request sent through this gateway automatically uses a different exit IP.
     """
 
     def __init__(self, *, gateway_url: str):
@@ -23,7 +23,7 @@ class RotatingProxyProvider(BaseProxyProvider):
     def from_config(cls, config: dict) -> 'RotatingProxyProvider':
         gateway = config.get("proxy_gateway_url", "")
         if not gateway:
-            raise RuntimeError("旋转代理未配置网关地址")
+            raise RuntimeError("Rotating proxy gateway address not configured")
         return cls(gateway_url=gateway)
 
     def get_proxy(self) -> Optional[str]:

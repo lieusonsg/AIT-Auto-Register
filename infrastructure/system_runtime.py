@@ -10,4 +10,4 @@ class SystemRuntime:
     def restart_solver(self) -> dict:
         import threading
         threading.Thread(target=restart, daemon=True).start()
-        return {"message": "重启中"}
+        return {"message": "Restarting"}

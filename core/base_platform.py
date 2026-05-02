@@ -1,4 +1,4 @@
-"""平台插件基类"""
+"""Platform plugin base class"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional
@@ -28,13 +28,13 @@ class Account:
     token: str = ""
     status: AccountStatus = AccountStatus.REGISTERED
     trial_end_time: int = 0       # unix timestamp
-    extra: dict = field(default_factory=dict)  # 平台自定义字段
+    extra: dict = field(default_factory=dict)  # platform custom fields
     created_at: int = field(default_factory=lambda: int(time.time()))
 
 
 @dataclass
 class RegisterConfig:
-    """注册任务配置"""
+    """Registration task configuration"""
     executor_type: str = "protocol"   # protocol | headless | headed
     captcha_solver: str = "auto"  # auto | <provider_key> | manual
     proxy: Optional[str] = None
@@ -42,11 +42,11 @@ class RegisterConfig:
 
 
 class BasePlatform(ABC):
-    # 子类必须定义
+    # Subclasses must define
     name: str = ""
     display_name: str = ""
     version: str = "1.0.0"
-    # 平台能力由数据库表提供；类上不再保留业务配置默认值。
+    # Platform capabilities provided by DB table; business config defaults no longer kept on class.
     supported_executors: list = []
     supported_identity_modes: list = []
     supported_oauth_providers: list = []
@@ -70,8 +70,8 @@ class BasePlatform(ABC):
             self.capabilities = db_caps
         if self.config.executor_type not in self.supported_executors:
             raise NotImplementedError(
-                f"{self.display_name} 暂不支持 '{self.config.executor_type}' 执行器，"
-                f"当前支持: {self.supported_executors}"
+                f"{self.display_name} does not support '{self.config.executor_type}' executor, "
+                f"supported: {self.supported_executors}"
             )
 
     def set_logger(self, logger):
@@ -136,10 +136,10 @@ class BasePlatform(ABC):
         )
 
         if (self.config.executor_type or "") in ("headless", "headed"):
-            self.log(f"使用浏览器模式注册: {self._browser_registration_label(identity)}")
+            self.log(f"Registering using browser mode: {self._browser_registration_label(identity)}")
             adapter = self.build_browser_registration_adapter()
             if adapter is None:
-                raise NotImplementedError(f"{self.display_name} 未实现浏览器注册适配器")
+                raise NotImplementedError(f"{self.display_name} has not implemented browser registration adapter")
             result = BrowserRegistrationFlow(adapter).run(ctx)
             return self._attach_identity_metadata(self._account_from_registration_result(result), identity)
 
@@ -147,25 +147,25 @@ class BasePlatform(ABC):
             adapter = self.build_protocol_oauth_adapter()
             if adapter is None:
                 raise RuntimeError(
-                    f"{self.display_name} 当前仅浏览器模式支持 oauth_browser，请使用受支持的浏览器执行器"
+                    f"{self.display_name} currently only supports oauth_browser in browser mode, please use a supported browser executor"
                 )
             result = ProtocolOAuthFlow(adapter).run(ctx)
             return self._attach_identity_metadata(self._account_from_registration_result(result), identity)
 
-        self.log(f"邮箱: {identity.email}")
+        self.log(f"Email: {identity.email}")
         adapter = self.build_protocol_mailbox_adapter()
         if adapter is None:
-            raise NotImplementedError(f"{self.display_name} 未实现协议邮箱注册适配器")
+            raise NotImplementedError(f"{self.display_name} has not implemented protocol mailbox registration adapter")
         result = ProtocolMailboxFlow(adapter).run(ctx)
         return self._attach_identity_metadata(self._account_from_registration_result(result), identity)
 
     @abstractmethod
     def check_valid(self, account: Account) -> bool:
-        """检测账号是否有效"""
+        """Check whether account is valid"""
         ...
 
     def get_trial_url(self, account: Account) -> Optional[str]:
-        """生成试用激活链接（可选实现）"""
+        """Generate trial activation link (optional implementation)"""
         return None
 
     def get_platform_actions(self) -> list:
@@ -186,7 +186,7 @@ class BasePlatform(ABC):
     def get_desktop_state(self) -> dict:
         return {
             "available": False,
-            "message": f"{self.display_name or self.name} 暂未提供桌面应用状态探测",
+            "message": f"{self.display_name or self.name} desktop app state detection not available",
         }
 
     def execute_action(self, action_id: str, account: Account, params: dict) -> dict:
@@ -310,11 +310,11 @@ class BasePlatform(ABC):
         return actions
 
     def get_quota(self, account: Account) -> dict:
-        """查询账号配额（可选实现）"""
+        """Query account quota (optional implementation)"""
         return {}
 
     def _make_executor(self):
-        """根据 config 创建执行器"""
+        """Create executor based on config"""
         from .executors.protocol import ProtocolExecutor
         t = self.config.executor_type
         if t == "protocol":
@@ -325,10 +325,10 @@ class BasePlatform(ABC):
         elif t == "headed":
             from .executors.playwright import PlaywrightExecutor
             return PlaywrightExecutor(proxy=self.config.proxy, headless=False)
-        raise ValueError(f"未知执行器类型: {t}")
+        raise ValueError(f"Unknown executor type: {t}")
 
     def _make_captcha(self, **kwargs):
-        """根据 config 创建验证码解决器"""
+        """Create captcha solver based on config"""
         from .base_captcha import create_captcha_solver
 
         provider_key = str(kwargs.get("provider_key") or "").strip()
@@ -348,14 +348,14 @@ class BasePlatform(ABC):
             return candidates[0]
 
         if self.config.executor_type in {"headless", "headed"}:
-            raise RuntimeError("浏览器模式未配置默认验证码 provider，请先在设置页启用并设为默认")
-        raise RuntimeError("协议模式未配置可用的验证码 provider，请先启用并配置至少一个验证码 provider")
+            raise RuntimeError("Browser mode has no default captcha provider configured, please enable and set as default in settings")
+        raise RuntimeError("Protocol mode has no available captcha provider configured, please enable and configure at least one captcha provider")
 
     def _get_captcha_solver_candidates(self) -> list[str]:
         requested = str(self.config.captcha_solver or "").strip().lower()
         if requested and requested not in {"", "auto"}:
             if not self._has_configured_captcha(requested):
-                raise RuntimeError(f"{requested} 未配置，无法创建验证码解决器")
+                raise RuntimeError(f"{requested} not configured, cannot create captcha solver")
             return [requested]
 
         if self.config.executor_type in {"headless", "headed"}:
@@ -413,21 +413,21 @@ class BasePlatform(ABC):
         errors: list[str] = []
         candidates = self._get_captcha_solver_candidates()
         if not candidates:
-            raise RuntimeError("未找到可用的 Turnstile 验证码 provider")
+            raise RuntimeError("No available Turnstile captcha provider found")
 
         for provider_key in candidates:
             try:
-                self.log(f"尝试 Turnstile provider: {provider_key}")
+                self.log(f"Trying Turnstile provider: {provider_key}")
                 solver = self._make_captcha(provider_key=provider_key)
                 token = str(solver.solve_turnstile(page_url, site_key) or "").strip()
                 if token:
                     return token
-                raise RuntimeError("未返回有效 token")
+                raise RuntimeError("No valid token returned")
             except Exception as exc:
                 errors.append(f"{provider_key}: {exc}")
-                self.log(f"Turnstile provider 失败: {provider_key} -> {exc}")
+                self.log(f"Turnstile provider failed: {provider_key} -> {exc}")
 
-        raise RuntimeError("；".join(errors))
+        raise RuntimeError("; ".join(errors))
 
     def _get_identity_provider_name(self) -> str:
         from .base_identity import normalize_identity_provider
@@ -439,8 +439,8 @@ class BasePlatform(ABC):
         mode = self._get_identity_provider_name()
         if mode not in self.supported_identity_modes:
             raise NotImplementedError(
-                f"{self.display_name} 暂不支持 identity_provider='{mode}'，"
-                f"当前支持: {self.supported_identity_modes}"
+                f"{self.display_name} does not support identity_provider='{mode}', "
+                f"supported: {self.supported_identity_modes}"
             )
         return create_identity_provider(
             mode,
@@ -453,8 +453,8 @@ class BasePlatform(ABC):
         self._last_identity = identity
         if require_email and not identity.email:
             raise ValueError(
-                f"{self.display_name} 注册流程未获取到可用邮箱，"
-                f"请提供 email 或配置支持的 identity_provider"
+                f"{self.display_name} registration flow did not obtain a usable email, "
+                f"please provide an email or configure a supported identity_provider"
             )
         return identity
 

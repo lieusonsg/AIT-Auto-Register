@@ -1,4 +1,4 @@
-"""Trae 协议邮箱注册 worker。"""
+"""Trae protocol mailbox registration worker."""
 from __future__ import annotations
 
 from typing import Callable, Optional
@@ -23,8 +23,8 @@ class TraeProtocolMailboxWorker:
         self.client.step2_send_code(email)
         otp = otp_callback() if otp_callback else input("OTP: ")
         if not otp:
-            raise RuntimeError("未获取到验证码")
-        self.log(f"验证码: {otp}")
+            raise RuntimeError("Verification code not obtained")
+        self.log(f"Verification code: {otp}")
         user_id = self.client.step3_register(email, use_password, otp)
         self.client.step4_trae_login()
         token = self.client.step5_get_token()

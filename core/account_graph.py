@@ -104,7 +104,7 @@ def _dedupe_chips(*groups: list[Any]) -> list[str]:
     for group in groups:
         for item in group or []:
             chip = _text(item)
-            if not chip or chip == "本地未切换" or chip in seen:
+            if not chip or chip == "local_not_switched" or chip in seen:
                 continue
             seen.add(chip)
             result.append(chip)
@@ -271,8 +271,8 @@ def _normalize_overview_summary(
     display_status = _derive_display_status(lifecycle_status, validity_status, plan_state)
 
     payload["chips"] = _dedupe_chips(payload.get("chips") or [])
-    if bool(payload.get("local_matches_target")) and "当前" not in payload["chips"]:
-        payload["chips"].append("当前")
+    if bool(payload.get("local_matches_target")) and "current" not in payload["chips"]:
+        payload["chips"].append("current")
 
     payload.update(
         {

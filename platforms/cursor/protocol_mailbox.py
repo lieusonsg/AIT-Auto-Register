@@ -1,4 +1,4 @@
-"""Cursor 协议邮箱注册 worker。"""
+"""Cursor protocol mailbox registration worker."""
 from __future__ import annotations
 
 from typing import Callable, Optional
@@ -20,20 +20,20 @@ class CursorProtocolMailboxWorker:
         captcha_solver=None,
     ) -> dict:
         use_password = password or _rand_password()
-        self.log(f"邮箱: {email}")
-        self.log("Step1: 获取 session...")
+        self.log(f"Email: {email}")
+        self.log("Step1: Getting session...")
         state_encoded, _ = self.client.step1_get_session()
-        self.log("Step2: 提交邮箱...")
+        self.log("Step2: Submitting email...")
         self.client.step2_submit_email(email, state_encoded)
-        self.log("Step3: 提交密码 + Turnstile...")
+        self.log("Step3: Submitting password + Turnstile...")
         self.client.step3_submit_password(use_password, email, state_encoded, captcha_solver)
-        self.log("等待 OTP 邮件...")
+        self.log("Waiting for OTP email...")
         otp = otp_callback() if otp_callback else input("OTP: ")
         if not otp:
-            raise RuntimeError("未获取到验证码")
-        self.log(f"验证码: {otp}")
-        self.log("Step4: 提交 OTP...")
+            raise RuntimeError("Failed to get verification code")
+        self.log(f"Verification code: {otp}")
+        self.log("Step4: Submitting OTP...")
         auth_code = self.client.step4_submit_otp(otp, email, state_encoded)
-        self.log("Step5: 获取 Token...")
+        self.log("Step5: Getting Token...")
         token = self.client.step5_get_token(auth_code, state_encoded)
         return {"email": email, "password": use_password, "token": token}

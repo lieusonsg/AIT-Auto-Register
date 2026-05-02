@@ -1,4 +1,4 @@
-"""blink.new 协议邮箱注册 worker。"""
+"""blink.new protocol mailbox registration worker."""
 from __future__ import annotations
 
 import re
@@ -19,44 +19,44 @@ class BlinkProtocolMailboxWorker:
         email: str,
         link_callback: Optional[Callable[[], str]] = None,
     ) -> dict:
-        """完整注册流程，返回持久化所需的 Blink 账号字段。"""
-        # Step 1: 触发魔法链接邮件
+        """Complete registration flow, returns Blink account fields needed for persistence."""
+        # Step 1: Trigger magic link email
         ok = self.client.step1_send_magic_link(email)
         if not ok:
-            raise RuntimeError("发送魔法链接失败")
+            raise RuntimeError("Failed to send magic link")
 
-        # Step 2: 等待邮件并提取 token
+        # Step 2: Wait for email and extract token
         if not link_callback:
             raise RuntimeError("link_callback is required")
-        self.log("等待魔法链接...")
+        self.log("Waiting for magic link...")
         raw = link_callback()
         if not raw:
-            raise RuntimeError("获取魔法链接超时")
+            raise RuntimeError("Timed out getting magic link")
 
-        # otp_callback 可能返回完整 URL 或纯 token
+        # otp_callback may return a full URL or a plain token
         token = self._extract_token(raw)
         self.log(f"magic_token={token[:16]}...")
 
-        # Step 3: 兑换 customToken
+        # Step 3: Redeem customToken
         auth_data = self.client.step2_redeem_magic_link(token, email)
         custom_token = auth_data["customToken"]
         user = auth_data["user"]
         workspace_slug = auth_data.get("workspaceSlug", "")
 
-        # Step 4: Firebase 登录获取 idToken
+        # Step 4: Firebase login to get idToken
         firebase_data = self.client.step3_firebase_signin(custom_token)
         id_token = firebase_data["idToken"]
         firebase_refresh_token = firebase_data["refreshToken"]
 
-        # Step 5: 获取 Blink app token
+        # Step 5: Get Blink app token
         app_token_data = self.client.step4_exchange_app_token(id_token, workspace_slug=workspace_slug)
         access_token = app_token_data.get("access_token", "")
         refresh_token = app_token_data.get("refresh_token", "")
 
-        # Step 6: 获取 session cookie（浏览器登录用）
+        # Step 6: Get session cookie (for browser login)
         session_token = self.client.step5_get_session_token(id_token, workspace_slug=workspace_slug)
 
-        # Step 7: 创建用户记录
+        # Step 7: Create user record
         user_info = self.client.step6_create_user(
             id_token,
             email,
@@ -65,7 +65,7 @@ class BlinkProtocolMailboxWorker:
         )
         workspace_id = user_info.get("active_workspace_id", "")
 
-        # Step 8: 注册后续（积分迁移 + 推荐码）
+        # Step 8: Post-registration (credit migration + referral code)
         post_register = self.client.step7_post_register(
             id_token,
             user_id=user.get("id", ""),
@@ -73,7 +73,7 @@ class BlinkProtocolMailboxWorker:
             workspace_slug=workspace_slug,
         )
 
-        # Step 9: 拉取一次 session-data，保存归一化套餐/额度摘要
+        # Step 9: Fetch session-data once, save normalized plan/credit summary
         session_data = self.client.fetch_session_data(
             id_token,
             session_token=session_token,
@@ -112,12 +112,12 @@ class BlinkProtocolMailboxWorker:
             "account_overview": overview,
         }
         self.log(
-            f"注册成功: {email} workspace={workspace_slug} "
+            f"Registration successful: {email} workspace={workspace_slug} "
             f"plan={overview.get('plan_name', 'unknown')} "
             f"billing_limit={overview.get('billing_period_credits_limit', 0)}"
         )
         if cashier_url:
-            self.log(f"自动生成支付链接: {cashier_url}")
+            self.log(f"Auto-generated payment link: {cashier_url}")
         return result
 
     def _maybe_create_checkout_link(
@@ -130,10 +130,10 @@ class BlinkProtocolMailboxWorker:
     ) -> tuple[str, str]:
         price_id = str(BLINK_PRICE_IDS.get("pro") or "").strip()
         if not workspace_id:
-            self.log("跳过自动生成支付链接: 缺少 workspace_id")
+            self.log("Skipping auto payment link generation: missing workspace_id")
             return "", ""
         if not price_id:
-            self.log("跳过自动生成支付链接: 未配置 Blink Pro price_id")
+            self.log("Skipping auto payment link generation: Blink Pro price_id not configured")
             return "", ""
 
         cancel_url = (
@@ -152,7 +152,7 @@ class BlinkProtocolMailboxWorker:
                 workspace_slug=workspace_slug,
             )
         except Exception as exc:
-            self.log(f"自动生成支付链接失败，忽略并继续: {exc}")
+            self.log(f"Auto payment link generation failed, skipping: {exc}")
             return "", ""
 
         cashier_url = str(checkout.get("url") or "").strip()
@@ -161,12 +161,12 @@ class BlinkProtocolMailboxWorker:
 
     @staticmethod
     def _extract_token(raw: str) -> str:
-        """从完整 URL 或原始字符串中提取 magic_token。"""
+        """Extract magic_token from a full URL or raw string."""
         m = re.search(r'magic_token=([a-f0-9]{64})', raw)
         if m:
             return m.group(1)
-        # 若直接是 64 位 hex token
+        # If it's a raw 64-character hex token
         raw = raw.strip()
         if re.fullmatch(r'[a-f0-9]{64}', raw):
             return raw
-        raise RuntimeError(f"无法从邮件内容中提取 magic_token: {raw[:200]}")
+        raise RuntimeError(f"Unable to extract magic_token from email content: {raw[:200]}")

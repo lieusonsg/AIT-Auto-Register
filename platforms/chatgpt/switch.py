@@ -1,8 +1,8 @@
 """
-ChatGPT / Codex 本地桌面端切号与状态查询。
+ChatGPT / Codex local desktop account switching and state queries.
 
-当前实现面向本机 Electron 客户端 `Codex`，通过写入其 Chromium Cookies 数据库
-完成 best-effort 本地登录态切换。
+The current implementation targets the local Electron client `Codex`,
+writing to its Chromium Cookies database for best-effort local session switching.
 """
 
 from __future__ import annotations
@@ -130,7 +130,7 @@ def close_codex_app() -> tuple[bool, str]:
         if system == "Darwin":
             subprocess.run(["osascript", "-e", 'quit app "Codex"'], capture_output=True, timeout=5)
             time.sleep(1.5)
-            return True, "已尝试关闭 Codex"
+            return True, "Attempted to close Codex"
         if system == "Windows":
             subprocess.run(
                 ["taskkill", "/IM", "Codex.exe", "/F"],
@@ -139,13 +139,13 @@ def close_codex_app() -> tuple[bool, str]:
                 timeout=5,
             )
             time.sleep(1.5)
-            return True, "已尝试关闭 Codex"
+            return True, "Attempted to close Codex"
         subprocess.run(["pkill", "-f", "codex"], capture_output=True, timeout=5)
         time.sleep(1.5)
-        return True, "已尝试关闭 Codex"
+        return True, "Attempted to close Codex"
     except Exception as exc:
-        logger.warning("关闭 Codex 失败: %s", exc)
-        return False, f"关闭 Codex 失败: {exc}"
+        logger.warning("Failed to close Codex: %s", exc)
+        return False, f"Failed to close Codex: {exc}"
 
 
 def restart_codex_app() -> tuple[bool, str]:
@@ -154,8 +154,8 @@ def restart_codex_app() -> tuple[bool, str]:
         if system == "Darwin":
             if os.path.exists("/Applications/Codex.app"):
                 subprocess.Popen(["open", "-a", "Codex"])
-                return True, "Codex 已重启"
-            return True, "未找到 /Applications/Codex.app，请手动启动 Codex"
+                return True, "Codex restarted"
+            return True, "/Applications/Codex.app not found, please start Codex manually"
         if system == "Windows":
             localappdata = os.environ.get("LOCALAPPDATA", "")
             for exe in (
@@ -164,27 +164,27 @@ def restart_codex_app() -> tuple[bool, str]:
             ):
                 if os.path.exists(exe):
                     subprocess.Popen([exe])
-                    return True, "Codex 已重启"
-            return True, "未找到 Codex.exe，请手动启动 Codex"
+                    return True, "Codex restarted"
+            return True, "Codex.exe not found, please start Codex manually"
         for binary in ("/usr/bin/codex", os.path.expanduser("~/.local/bin/codex")):
             if os.path.exists(binary):
                 subprocess.Popen([binary])
-                return True, "Codex 已重启"
+                return True, "Codex restarted"
         subprocess.Popen(["codex"])
-        return True, "Codex 已重启"
+        return True, "Codex restarted"
     except Exception as exc:
-        logger.warning("启动 Codex 失败: %s", exc)
-        return False, f"启动 Codex 失败: {exc}"
+        logger.warning("Failed to start Codex: %s", exc)
+        return False, f"Failed to start Codex: {exc}"
 
 
 def switch_codex_account(session_token: str = "", cookies: str = "") -> tuple[bool, dict]:
     resolved_session = extract_session_token(session_token, cookies)
     if not resolved_session:
-        return False, {"error": "缺少 __Secure-next-auth.session-token，无法切换本地 Codex 桌面端账号"}
+        return False, {"error": "Missing __Secure-next-auth.session-token, cannot switch local Codex desktop account"}
 
     cookies_path = _get_codex_cookies_path()
     if not os.path.exists(cookies_path):
-        return False, {"error": f"未找到 Codex Cookies 数据库: {cookies_path}"}
+        return False, {"error": f"Codex Cookies database not found: {cookies_path}"}
 
     cookie_map = _parse_cookie_header(cookies)
     cookie_map["__Secure-next-auth.session-token"] = resolved_session
@@ -233,11 +233,11 @@ def switch_codex_account(session_token: str = "", cookies: str = "") -> tuple[bo
         finally:
             conn.close()
     except Exception as exc:
-        logger.error("写入 Codex Cookies 失败: %s", exc)
-        return False, {"error": f"写入 Codex Cookies 失败: {exc}"}
+        logger.error("Failed to write Codex Cookies: %s", exc)
+        return False, {"error": f"Failed to write Codex Cookies: {exc}"}
 
     return True, {
-        "message": "已写入 Codex 本地 Cookies，准备重启桌面端",
+        "message": "Codex local Cookies written, preparing to restart desktop app",
         "cookies_path": cookies_path,
         "cookie_names": sorted(cookie_map.keys()),
         "session_token_preview": _mask_secret(resolved_session),
@@ -264,7 +264,7 @@ def read_current_codex_account() -> dict:
         finally:
             conn.close()
     except Exception as exc:
-        logger.warning("读取 Codex Cookies 失败: %s", exc)
+        logger.warning("Failed to read Codex Cookies: %s", exc)
         return {
             "available": True,
             "cookies_path": cookies_path,
@@ -343,7 +343,7 @@ def fetch_chatgpt_account_state(
         "platform": "chatgpt",
         "desktop_app": "Codex",
         "session_token_present": bool(extract_session_token(session_token, cookies)),
-        "quota_note": "ChatGPT 未公开稳定的剩余额度接口，当前返回订阅状态和账号 profile 信息。",
+        "quota_note": "ChatGPT does not expose a stable remaining-quota API; currently returns subscription status and account profile info.",
     }
 
     resolved_session = extract_session_token(session_token, cookies)
@@ -397,6 +397,6 @@ def fetch_chatgpt_account_state(
             state["profile_error"] = profile
     else:
         state["valid"] = False
-        state["profile_error"] = "缺少 access_token，且无法通过 session_token 刷新"
+        state["profile_error"] = "Missing access_token, and unable to refresh via session_token"
 
     return state

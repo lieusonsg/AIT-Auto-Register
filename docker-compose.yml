@@ -3,15 +3,15 @@ services:
     build: .
     ports:
       - "8000:8000"   # FastAPI / Web UI
-      - "6080:6080"   # noVNC (headed 浏览器预览)
+      - "6080:6080"   # noVNC (headed browser preview)
       - "8889:8889"   # Turnstile Solver
     environment:
       - DISPLAY=:99
       - ACCOUNT_MANAGER_DATABASE_URL=sqlite:////app/data/account_manager.db
-      # 可选：设置访问密码，不设置则无密码保护
+      # Optional: set access password, no password protection if unset
       # - APP_PASSWORD=changeme
-      # 可选：设置 VNC 密码
+      # Optional: set VNC password
       # - VNC_PASSWORD=changeme
     volumes:
-      - ./data:/app/data   # 持久化 SQLite 数据库
+      - ./data:/app/data   # Persist SQLite database
     restart: unless-stopped

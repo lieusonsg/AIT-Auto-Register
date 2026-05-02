@@ -1,4 +1,4 @@
-"""Trae.ai 平台插件"""
+"""Trae.ai platform plugin"""
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
 from core.registration import BrowserRegistrationAdapter, OtpSpec, ProtocolMailboxAdapter, ProtocolOAuthAdapter, RegistrationCapability, RegistrationResult
@@ -63,7 +63,7 @@ class TraePlatform(BasePlatform):
             ),
             oauth_runner=self._run_protocol_oauth,
             capability=RegistrationCapability(oauth_allowed_executor_types=("headed",)),
-            otp_spec=OtpSpec(wait_message="等待验证码..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code..."),
         )
 
     def build_protocol_oauth_adapter(self):
@@ -84,7 +84,7 @@ class TraePlatform(BasePlatform):
                 password=ctx.password,
                 otp_callback=artifacts.otp_callback,
             ),
-            otp_spec=OtpSpec(wait_message="等待验证码..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code..."),
             use_executor=True,
         )
 
@@ -92,15 +92,15 @@ class TraePlatform(BasePlatform):
         return bool(account.token)
 
     def get_platform_actions(self) -> list:
-        """返回平台支持的操作列表"""
+        """Return list of supported platform actions"""
         return [
-            {"id": "switch_account", "label": "切换到桌面应用", "params": []},
-            {"id": "get_user_info", "label": "获取用户信息", "params": []},
-            {"id": "get_cashier_url", "label": "获取升级链接", "params": []},
+            {"id": "switch_account", "label": "Switch to desktop app", "params": []},
+            {"id": "get_user_info", "label": "Get user info", "params": []},
+            {"id": "get_cashier_url", "label": "Get upgrade link", "params": []},
         ]
 
     def execute_action(self, action_id: str, account: Account, params: dict) -> dict:
-        """执行平台操作"""
+        """Execute platform action"""
         if action_id == "switch_account":
             from platforms.trae.switch import switch_trae_account, restart_trae_ide
             
@@ -110,7 +110,7 @@ class TraePlatform(BasePlatform):
             region = account.region or ""
             
             if not token:
-                return {"ok": False, "error": "账号缺少 token"}
+                return {"ok": False, "error": "Account missing token"}
             
             ok, msg = switch_trae_account(token, user_id, email, region)
             if not ok:
@@ -129,25 +129,25 @@ class TraePlatform(BasePlatform):
             
             token = account.token
             if not token:
-                return {"ok": False, "error": "账号缺少 token"}
-            
+                return {"ok": False, "error": "Account missing token"}
+
             user_info = get_trae_user_info(token)
             if user_info:
                 return {"ok": True, "data": user_info}
-            return {"ok": False, "error": "获取用户信息失败"}
+            return {"ok": False, "error": "Failed to get user info"}
         
         elif action_id == "get_cashier_url":
             from platforms.trae.core import TraeRegister
             with self._make_executor() as ex:
                 reg = TraeRegister(executor=ex)
-                # 重新登录刷新 session，再获取新 token 和 cashier_url
+                # Re-login to refresh session, then get new token and cashier_url
                 reg.step4_trae_login()
                 token = reg.step5_get_token()
                 if not token:
                     token = account.token
                 cashier_url = reg.step7_create_order(token)
             if not cashier_url:
-                return {"ok": False, "error": "获取升级链接失败，token 可能已过期，请重新注册"}
-            return {"ok": True, "data": {"cashier_url": cashier_url, "message": "请在浏览器中打开升级链接完成 Pro 订阅"}}
+                return {"ok": False, "error": "Failed to get upgrade link, token may have expired, please re-register"}
+            return {"ok": True, "data": {"cashier_url": cashier_url, "message": "Please open the upgrade link in browser to complete Pro subscription"}}
 
-        raise NotImplementedError(f"未知操作: {action_id}")
+        raise NotImplementedError(f"Unknown action: {action_id}")

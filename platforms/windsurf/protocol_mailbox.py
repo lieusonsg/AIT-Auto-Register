@@ -1,4 +1,4 @@
-"""Windsurf 协议邮箱注册 worker。"""
+"""Windsurf protocol mailbox registration worker."""
 from __future__ import annotations
 
 import re
@@ -27,12 +27,12 @@ class WindsurfProtocolMailboxWorker:
             self.client.fetch_connections(email)
             self.client.check_user_login_method(email)
         except Exception as exc:
-            self.log(f"Windsurf 注册预检失败，继续尝试邮箱验证码流程: {exc}")
+            self.log(f"Windsurf registration pre-check failed, continuing with email verification flow: {exc}")
 
         verification_token = self.client.start_email_signup(email)
         raw_code = otp_callback()
         code = self._extract_code(raw_code)
-        self.log(f"获取 Windsurf 验证码: {code}")
+        self.log(f"Obtained Windsurf verification code: {code}")
 
         complete = self.client.complete_email_signup(
             email=email,
@@ -55,7 +55,7 @@ class WindsurfProtocolMailboxWorker:
         summary = dict(state.get("summary") or {})
         overview = dict(summary.get("account_overview") or {})
         self.log(
-            f"Windsurf 注册成功: {email} "
+            f"Windsurf registration successful: {email} "
             f"plan={overview.get('plan_name', 'unknown')} "
             f"quota={overview.get('remaining_credits', '-')}"
         )
@@ -78,5 +78,5 @@ class WindsurfProtocolMailboxWorker:
         match = re.search(r"\b(\d{6})\b", text)
         if match:
             return match.group(1)
-        raise RuntimeError(f"无法从邮件内容中提取 Windsurf 6 位验证码: {text[:200]}")
+        raise RuntimeError(f"Cannot extract Windsurf 6-digit verification code from email content: {text[:200]}")
 

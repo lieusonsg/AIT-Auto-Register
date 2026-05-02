@@ -1,4 +1,4 @@
-"""Cerebras Cloud 平台插件"""
+"""Cerebras Cloud platform plugin"""
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
 from core.registration import OtpSpec, ProtocolMailboxAdapter, RegistrationResult
@@ -47,7 +47,7 @@ class CerebrasPlatform(BasePlatform):
                 password="",
                 otp_callback=artifacts.otp_callback,
             ),
-            otp_spec=OtpSpec(wait_message="等待验证码邮件..."),
+            otp_spec=OtpSpec(wait_message="Waiting for OTP email..."),
             use_executor=True,
         )
 
@@ -71,7 +71,7 @@ class CerebrasPlatform(BasePlatform):
 
     def get_platform_actions(self) -> list:
         return [
-            {"id": "get_account_state", "label": "查询账号状态", "params": []},
+            {"id": "get_account_state", "label": "Query account status", "params": []},
         ]
 
     def execute_action(self, action_id: str, account: Account, params: dict) -> dict:
@@ -85,4 +85,4 @@ class CerebrasPlatform(BasePlatform):
                     "api_key_preview": f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else api_key,
                 },
             }
-        raise NotImplementedError(f"未知操作: {action_id}")
+        raise NotImplementedError(f"Unknown action: {action_id}")

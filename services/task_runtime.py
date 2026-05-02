@@ -33,12 +33,12 @@ class TaskRuntime:
             mark_incomplete_tasks_interrupted()
             self._dispatcher = threading.Thread(target=self._loop, daemon=True, name="task-runtime")
             self._dispatcher.start()
-            print("[TaskRuntime] 已启动")
+            print("[TaskRuntime] Started")
 
     def stop(self) -> None:
         with self._lock:
             self._running = False
-        print("[TaskRuntime] 停止中")
+        print("[TaskRuntime] Stopping")
 
     def wake_up(self) -> None:
         # Polling loop wakes quickly already; this method exists as an explicit runtime hook.

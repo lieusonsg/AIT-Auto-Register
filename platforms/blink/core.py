@@ -1,16 +1,16 @@
 """
-blink.new 注册与账号状态请求封装。
+blink.new registration and account status request encapsulation.
 
-核心链路:
-  1. POST /api/auth/main-app/magic-link 发送魔法链接
-  2. GET /api/auth/main-app/magic-link 兑换 customToken
-  3. POST Firebase signInWithCustomToken 获取 idToken / firebase refresh token
-  4. POST /api/auth/token 获取 Blink access_token / refresh_token
-  5. POST /api/auth/session 获取 Blink session cookie
-  6. POST /api/users/create 初始化用户记录
-  7. POST /api/credits/migrate 与 /api/referral/generate 完成注册后动作
-  8. GET /api/auth/session-data 查询套餐/额度
-  9. POST /api/stripe/checkout 生成 Stripe Checkout 链接
+Core flow:
+  1. POST /api/auth/main-app/magic-link - send magic link
+  2. GET /api/auth/main-app/magic-link - redeem customToken
+  3. POST Firebase signInWithCustomToken - get idToken / firebase refresh token
+  4. POST /api/auth/token - get Blink access_token / refresh_token
+  5. POST /api/auth/session - get Blink session cookie
+  6. POST /api/users/create - initialize user record
+  7. POST /api/credits/migrate and /api/referral/generate - post-registration actions
+  8. GET /api/auth/session-data - query plan/credits
+  9. POST /api/stripe/checkout - generate Stripe Checkout link
 """
 from __future__ import annotations
 
@@ -79,18 +79,18 @@ def build_blink_account_overview(session_data: dict[str, Any], *, fallback_email
 
     chips: list[str] = []
     if workspace.get("is_personal"):
-        chips.append("个人")
+        chips.append("Personal")
     if tier:
         chips.append(tier.upper())
     billing_limit = _as_int(usage.get("billing_period_credits_limit"))
     daily_limit = _as_int(usage.get("daily_credits_limit"))
     monthly_limit = _as_int(usage.get("monthly_credits_limit"))
     if billing_limit:
-        chips.append(f"账期额度 {billing_limit}")
+        chips.append(f"Billing limit {billing_limit}")
     elif monthly_limit:
-        chips.append(f"月额度 {monthly_limit}")
+        chips.append(f"Monthly limit {monthly_limit}")
     if daily_limit:
-        chips.append(f"日额度 {daily_limit}")
+        chips.append(f"Daily limit {daily_limit}")
 
     geoip = _as_dict(user.get("geoip"))
     return {
@@ -135,17 +135,17 @@ def summarize_blink_account_state(session_data: dict[str, Any], *, fallback_emai
     billing_limit = _as_int(overview.get("billing_period_credits_limit"))
     daily_limit = _as_int(overview.get("daily_credits_limit"))
     monthly_limit = _as_int(overview.get("monthly_credits_limit"))
-    message_parts = [f"当前套餐: {plan_name.upper() if plan_name else 'UNKNOWN'}"]
+    message_parts = [f"Current plan: {plan_name.upper() if plan_name else 'UNKNOWN'}"]
     if billing_limit:
-        message_parts.append(f"账期额度 {billing_limit}")
+        message_parts.append(f"Billing limit {billing_limit}")
     elif monthly_limit:
-        message_parts.append(f"月额度 {monthly_limit}")
+        message_parts.append(f"Monthly limit {monthly_limit}")
     if daily_limit:
-        message_parts.append(f"日额度 {daily_limit}")
+        message_parts.append(f"Daily limit {daily_limit}")
 
     return {
         "valid": bool(user),
-        "message": "，".join(message_parts),
+        "message": ", ".join(message_parts),
         "remote_user": user,
         "workspace": workspace,
         "usage": usage,
@@ -234,7 +234,7 @@ class BlinkRegister:
         return headers
 
     def step1_send_magic_link(self, email: str, *, redirect_url: str = "/") -> bool:
-        self.log(f"Step1: 发送魔法链接到 {email}")
+        self.log(f"Step1: Sending magic link to {email}")
         response = self.s.post(
             f"{BLINK_BASE}/api/auth/main-app/magic-link",
             json={"email": email, "redirectUrl": redirect_url or "/"},
@@ -250,11 +250,11 @@ class BlinkRegister:
         )
         self.log(f"  -> {response.status_code} {response.text[:200]}")
         if response.status_code != 200:
-            raise RuntimeError(f"发送魔法链接失败: {response.status_code} {response.text[:200]}")
+            raise RuntimeError(f"Failed to send magic link: {response.status_code} {response.text[:200]}")
         return bool(response.json().get("success"))
 
     def step2_redeem_magic_link(self, token: str, email: str) -> dict[str, Any]:
-        self.log(f"Step2: 兑换魔法链接 token={token[:16]}...")
+        self.log(f"Step2: Redeeming magic link token={token[:16]}...")
         response = self.s.get(
             f"{BLINK_BASE}/api/auth/main-app/magic-link",
             params={"token": token, "email": email},
@@ -268,10 +268,10 @@ class BlinkRegister:
         )
         self.log(f"  -> {response.status_code}")
         if response.status_code != 200:
-            raise RuntimeError(f"兑换魔法链接失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Failed to redeem magic link: {response.status_code} {response.text[:300]}")
         data = response.json()
         if not data.get("success"):
-            raise RuntimeError(f"魔法链接无效: {data.get('error', '未知错误')}")
+            raise RuntimeError(f"Invalid magic link: {data.get('error', 'Unknown error')}")
         return data
 
     def step3_firebase_signin(self, custom_token: str) -> dict[str, Any]:
@@ -290,7 +290,7 @@ class BlinkRegister:
         )
         self.log(f"  -> {response.status_code}")
         if response.status_code != 200:
-            raise RuntimeError(f"Firebase 登录失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Firebase login failed: {response.status_code} {response.text[:300]}")
         return response.json()
 
     def step3_refresh_firebase(self, firebase_refresh_token: str) -> dict[str, Any]:
@@ -310,11 +310,11 @@ class BlinkRegister:
         )
         self.log(f"  -> {response.status_code}")
         if response.status_code != 200:
-            raise RuntimeError(f"Firebase 刷新失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Firebase refresh failed: {response.status_code} {response.text[:300]}")
         return response.json()
 
     def step4_exchange_app_token(self, id_token: str, *, workspace_slug: str = "") -> dict[str, Any]:
-        self.log("Step4: 交换 Blink app token")
+        self.log("Step4: Exchanging Blink app token")
         self._bind_workspace_slug(workspace_slug)
         referer = f"{BLINK_BASE}/{workspace_slug}" if workspace_slug else BLINK_BASE
         response = self.s.post(
@@ -329,11 +329,11 @@ class BlinkRegister:
         )
         self.log(f"  -> {response.status_code}")
         if response.status_code != 200:
-            raise RuntimeError(f"获取 Blink token 失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Failed to get Blink token: {response.status_code} {response.text[:300]}")
         return response.json()
 
     def step5_get_session_token(self, id_token: str, *, workspace_slug: str = "") -> str:
-        self.log("Step5: 获取 session cookie")
+        self.log("Step5: Getting session cookie")
         self._bind_workspace_slug(workspace_slug)
         referer = f"{BLINK_BASE}/{workspace_slug}" if workspace_slug else BLINK_BASE
         response = self.s.post(
@@ -348,12 +348,12 @@ class BlinkRegister:
         )
         self.log(f"  -> {response.status_code}")
         if response.status_code != 200:
-            raise RuntimeError(f"获取 session cookie 失败: {response.status_code} {response.text[:200]}")
+            raise RuntimeError(f"Failed to get session cookie: {response.status_code} {response.text[:200]}")
         for cookie in self.s.cookies.jar:
             if cookie.name == "session":
                 self.log("  session cookie ok")
                 return cookie.value
-        raise RuntimeError("Blink 未返回 session cookie")
+        raise RuntimeError("Blink did not return session cookie")
 
     def step6_create_user(
         self,
@@ -365,7 +365,7 @@ class BlinkRegister:
         geoip: dict[str, Any] | None = None,
         signup_source: str = "auth_page",
     ) -> dict[str, Any]:
-        self.log("Step6: 创建用户记录")
+        self.log("Step6: Creating user record")
         self._bind_workspace_slug(workspace_slug)
         username = user_id[-16:] if user_id else ""
         payload: dict[str, Any] = {
@@ -396,7 +396,7 @@ class BlinkRegister:
         )
         self.log(f"  -> {response.status_code}")
         if response.status_code != 200:
-            raise RuntimeError(f"创建用户记录失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Failed to create user record: {response.status_code} {response.text[:300]}")
         return response.json()
 
     def step7_post_register(
@@ -407,7 +407,7 @@ class BlinkRegister:
         workspace_id: str,
         workspace_slug: str = "",
     ) -> dict[str, Any]:
-        self.log("Step7: 注册后续动作")
+        self.log("Step7: Post-registration actions")
         self._bind_workspace_slug(workspace_slug)
         referer = f"{BLINK_BASE}/{workspace_slug}" if workspace_slug else BLINK_BASE
         migrate_response = self.s.post(
@@ -459,7 +459,7 @@ class BlinkRegister:
             headers=self._auth_headers(access_token=id_token, referer=target_referer),
         )
         if response.status_code != 200:
-            raise RuntimeError(f"获取 Blink 账号状态失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Failed to get Blink account status: {response.status_code} {response.text[:300]}")
         return response.json()
 
     def create_checkout(
@@ -492,7 +492,7 @@ class BlinkRegister:
             },
         )
         if response.status_code != 200:
-            raise RuntimeError(f"生成 Blink 支付链接失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Failed to generate Blink payment link: {response.status_code} {response.text[:300]}")
         return response.json()
 
     def create_api_key(
@@ -519,7 +519,7 @@ class BlinkRegister:
             },
         )
         if response.status_code not in (200, 201):
-            raise RuntimeError(f"创建 Blink API Key 失败: {response.status_code} {response.text[:300]}")
+            raise RuntimeError(f"Failed to create Blink API Key: {response.status_code} {response.text[:300]}")
         return response.json()
 
     def refresh_auth_session(self, firebase_refresh_token: str, *, workspace_slug: str = "") -> dict[str, str]:
@@ -527,14 +527,14 @@ class BlinkRegister:
         id_token = _as_text(firebase_data.get("id_token") or firebase_data.get("access_token"))
         next_firebase_refresh_token = _as_text(firebase_data.get("refresh_token") or firebase_refresh_token)
         if not id_token:
-            raise RuntimeError("Firebase 刷新未返回 id_token")
+            raise RuntimeError("Firebase refresh did not return id_token")
 
         app_tokens = self.step4_exchange_app_token(id_token, workspace_slug=workspace_slug)
         access_token = _as_text(app_tokens.get("access_token"))
         refresh_token = _as_text(app_tokens.get("refresh_token"))
         session_token = self.step5_get_session_token(id_token, workspace_slug=workspace_slug)
         if not access_token:
-            raise RuntimeError("Blink token 刷新后未返回 access_token")
+            raise RuntimeError("Blink token refresh did not return access_token")
         return {
             "id_token": id_token,
             "access_token": access_token,
@@ -569,12 +569,12 @@ def load_blink_account_state(
                 workspace_slug=workspace_slug,
             )
         except Exception as exc:
-            client.log(f"现有 Blink id_token 不可用，尝试刷新: {exc}")
+            client.log(f"Existing Blink id_token is invalid, attempting refresh: {exc}")
 
     if session_data is None:
         firebase_refresh_token = context["firebase_refresh_token"]
         if not firebase_refresh_token:
-            raise RuntimeError("账号缺少 firebase_refresh_token，无法刷新 Blink 会话")
+            raise RuntimeError("Account is missing firebase_refresh_token, cannot refresh Blink session")
         refreshed = client.refresh_auth_session(firebase_refresh_token, workspace_slug=workspace_slug)
         context.update(refreshed)
         session_data = client.fetch_session_data(

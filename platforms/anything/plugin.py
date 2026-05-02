@@ -1,4 +1,4 @@
-"""anything.com 平台插件。"""
+"""anything.com platform plugin."""
 from __future__ import annotations
 
 from core.base_mailbox import BaseMailbox
@@ -78,8 +78,8 @@ class AnythingPlatform(BasePlatform):
             register_runner=_run_worker,
             link_spec=LinkSpec(
                 keyword="anything",
-                wait_message="等待 Anything 魔法链接邮件...",
-                success_label="魔法链接",
+                wait_message="Waiting for Anything magic link email...",
+                success_label="Magic link",
             ),
         )
 
@@ -100,8 +100,8 @@ class AnythingPlatform(BasePlatform):
 
     def get_platform_actions(self) -> list:
         return [
-            {"id": "get_account_state", "label": "查询账号状态", "params": []},
-            {"id": "generate_checkout_link", "label": "生成支付链接", "params": []},
+            {"id": "get_account_state", "label": "Query account status", "params": []},
+            {"id": "generate_checkout_link", "label": "Generate payment link", "params": []},
         ]
 
     def execute_action(self, action_id: str, account: Account, params: dict) -> dict:
@@ -114,11 +114,11 @@ class AnythingPlatform(BasePlatform):
             summary = dict(state.get("summary") or {})
             organization_id = str(summary.get("organization_id") or "").strip()
             if not organization_id:
-                return {"ok": False, "error": "未获取到 organization_id，无法生成 Anything 支付链接"}
+                return {"ok": False, "error": "Failed to get organization_id, cannot generate Anything payment link"}
 
             lookup = str(params.get("lookup") or ANYTHING_CHECKOUT_LOOKUPS.get("pro_20_monthly") or "").strip()
             if not lookup:
-                return {"ok": False, "error": "未提供 checkout lookup"}
+                return {"ok": False, "error": "No checkout lookup provided"}
 
             client = AnythingClient(proxy=self.config.proxy if self.config else None, log_fn=self.log)
             checkout = client.create_checkout_session_with_lookup(
@@ -136,8 +136,8 @@ class AnythingPlatform(BasePlatform):
                     "lookup": checkout["lookup"],
                     "organization_id": organization_id,
                     "account_state": summary,
-                    "message": "Anything 支付链接已生成",
+                    "message": "Anything payment link generated",
                 },
             }
 
-        raise NotImplementedError(f"未知操作: {action_id}")
+        raise NotImplementedError(f"Unknown action: {action_id}")

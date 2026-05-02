@@ -1,4 +1,4 @@
-"""定时任务调度 - 账号有效性检测、trial 到期提醒"""
+"""Scheduled task dispatcher - account validity check, trial expiry reminders"""
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
@@ -27,7 +27,7 @@ class Scheduler:
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
-        print("[Scheduler] 已启动")
+        print("[Scheduler] Started")
 
     def stop(self):
         self._running = False
@@ -37,12 +37,12 @@ class Scheduler:
             try:
                 self.check_trial_expiry()
             except Exception as e:
-                print(f"[Scheduler] 错误: {e}")
-            # 每小时检查一次
+                print(f"[Scheduler] Error: {e}")
+            # Check every hour
             time.sleep(3600)
 
     def check_trial_expiry(self):
-        """检查 trial 到期账号，更新状态"""
+        """Check expired trial accounts and update status"""
         now = int(datetime.now(timezone.utc).timestamp())
         with Session(engine) as s:
             accounts = s.exec(select(AccountModel)).all()
@@ -60,10 +60,10 @@ class Scheduler:
                     updated += 1
             s.commit()
             if updated:
-                print(f"[Scheduler] {updated} 个 trial 账号已到期")
+                print(f"[Scheduler] {updated} trial account(s) expired")
 
     def check_accounts_valid(self, platform: str = None, limit: int = 50):
-        """批量检测账号有效性"""
+        """Batch check account validity"""
         load_all()
         with Session(engine) as s:
             q = select(AccountModel)

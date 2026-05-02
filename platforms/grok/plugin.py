@@ -1,4 +1,4 @@
-"""Grok (x.ai) 平台插件"""
+"""Grok (x.ai) platform plugin"""
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
 from core.registration import BrowserRegistrationAdapter, OtpSpec, ProtocolMailboxAdapter, ProtocolOAuthAdapter, RegistrationCapability, RegistrationResult
@@ -61,7 +61,7 @@ class GrokPlatform(BasePlatform):
             ),
             oauth_runner=self._run_protocol_oauth,
             capability=RegistrationCapability(oauth_allowed_executor_types=("headed",)),
-            otp_spec=OtpSpec(wait_message="等待验证码...", code_pattern=r"[A-Z0-9]{3}-[A-Z0-9]{3}"),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code...", code_pattern=r"[A-Z0-9]{3}-[A-Z0-9]{3}"),
         )
 
     def build_protocol_oauth_adapter(self):
@@ -83,7 +83,7 @@ class GrokPlatform(BasePlatform):
                 password=ctx.password,
                 otp_callback=artifacts.otp_callback,
             ),
-            otp_spec=OtpSpec(wait_message="等待验证码...", code_pattern=r"[A-Z0-9]{3}-[A-Z0-9]{3}"),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code...", code_pattern=r"[A-Z0-9]{3}-[A-Z0-9]{3}"),
             use_captcha=True,
         )
 
@@ -94,4 +94,4 @@ class GrokPlatform(BasePlatform):
         return []
 
     def execute_action(self, action_id: str, account: Account, params: dict) -> dict:
-        raise NotImplementedError(f"未知操作: {action_id}")
+        raise NotImplementedError(f"Unknown action: {action_id}")

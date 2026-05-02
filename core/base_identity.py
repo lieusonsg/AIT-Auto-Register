@@ -1,4 +1,4 @@
-"""注册身份提供者抽象。"""
+"""Registration identity provider abstraction."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -85,9 +85,9 @@ class MailboxIdentityProvider(BaseIdentityProvider):
         email = getattr(mail_acct, "email", "") or ""
         if not requested_email and not email:
             provider_name = getattr(self.mailbox, "__class__", type(self.mailbox)).__name__
-            raise ValueError(f"{provider_name} 未返回可用邮箱，请检查 mailbox provider 配置或服务状态")
+            raise ValueError(f"{provider_name} did not return a usable email, please check mailbox provider configuration or service status")
         if requested_email and email and requested_email != email:
-            raise ValueError(f"传入邮箱 {requested_email} 与当前邮箱 provider 返回的 {email} 不一致")
+            raise ValueError(f"Provided email {requested_email} does not match the email returned by the current mailbox provider: {email}")
         before_ids = self.mailbox.get_current_ids(mail_acct) if mail_acct else set()
         return IdentityMaterial(
             identity_provider=self.identity_provider,
@@ -127,4 +127,4 @@ def create_identity_provider(mode: Optional[str], *, mailbox=None, extra: dict =
         return MailboxIdentityProvider(mailbox=mailbox, extra=extra)
     if normalized == "oauth_browser":
         return BrowserOAuthIdentityProvider(mailbox=mailbox, extra=extra)
-    raise ValueError(f"未知 identity_provider: {mode}")
+    raise ValueError(f"Unknown identity_provider: {mode}")

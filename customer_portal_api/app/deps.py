@@ -22,15 +22,15 @@ def get_current_user(
     session: Session = Depends(get_db_session),
 ) -> PortalUser:
     if not credentials or not credentials.credentials:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="缺少 access token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing access token")
     payload = decode_access_token(credentials.credentials)
     user = session.get(PortalUser, int(payload.get("sub", 0) or 0))
     if not user or user.status != "active":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在或已被禁用")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User does not exist or has been disabled")
     return user
 
 
 def require_admin(user: PortalUser = Depends(get_current_user)) -> PortalUser:
     if user.role_code != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin permission required")
     return user

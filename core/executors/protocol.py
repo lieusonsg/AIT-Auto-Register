@@ -1,4 +1,4 @@
-"""纯协议执行器 - 基于 curl_cffi"""
+"""Pure protocol executor - based on curl_cffi"""
 from curl_cffi import requests as curl_requests
 from ..base_executor import BaseExecutor, Response
 

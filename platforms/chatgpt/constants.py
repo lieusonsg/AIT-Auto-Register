@@ -1,5 +1,5 @@
 """
-常量定义
+Constant definitions
 """
 
 import os
@@ -10,11 +10,11 @@ from typing import Dict, List, Tuple
 
 
 # ============================================================================
-# 枚举类型
+# Enum types
 # ============================================================================
 
 class AccountStatus(str, Enum):
-    """账户状态"""
+    """Account status"""
     ACTIVE = "active"
     EXPIRED = "expired"
     BANNED = "banned"
@@ -22,7 +22,7 @@ class AccountStatus(str, Enum):
 
 
 class TaskStatus(str, Enum):
-    """任务状态"""
+    """Task status"""
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -31,7 +31,7 @@ class TaskStatus(str, Enum):
 
 
 class EmailServiceType(str, Enum):
-    """邮箱服务类型"""
+    """Email service type"""
     TEMPMAIL = "tempmail"
     OUTLOOK = "outlook"
     CUSTOM_DOMAIN = "custom_domain"
@@ -39,36 +39,36 @@ class EmailServiceType(str, Enum):
 
 
 # ============================================================================
-# 应用常量
+# Application constants
 # ============================================================================
 
-APP_NAME = "OpenAI/Codex CLI 自动注册系统"
+APP_NAME = "OpenAI/Codex CLI Auto Registration System"
 APP_VERSION = "2.0.0"
-APP_DESCRIPTION = "自动注册 OpenAI/Codex CLI 账号的系统"
+APP_DESCRIPTION = "System for automatically registering OpenAI/Codex CLI accounts"
 
 # ============================================================================
-# OpenAI OAuth 相关常量
+# OpenAI OAuth related constants
 # ============================================================================
 
-# OpenAI 基础 URL（支持通过环境变量覆盖）
+# OpenAI base URL (supports override via environment variables)
 OPENAI_AUTH = os.environ.get("OPENAI_AUTH_BASE_URL", "https://auth.openai.com")
 CHATGPT_APP = os.environ.get("CHATGPT_APP_URL", "https://chatgpt.com")
 PLATFORM_LOGIN_ENTRY = os.environ.get("PLATFORM_LOGIN_ENTRY", "https://platform.openai.com/login")
 
-# OAuth 参数（支持通过环境变量覆盖）
-# 注册阶段使用 ChatGPT Web client（无 add_phone 要求）
+# OAuth parameters (supports override via environment variables)
+# Registration phase uses ChatGPT Web client (no add_phone requirement)
 OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID", "app_X8zY6vW2pQ9tR3dE7nK1jL5gH")
 OAUTH_AUTH_URL = f"{OPENAI_AUTH}/api/accounts/authorize"
 OAUTH_TOKEN_URL = f"{OPENAI_AUTH}/oauth/token"
 OAUTH_REDIRECT_URI = "https://chatgpt.com/api/auth/callback/openai"
 OAUTH_SCOPE = "openid email profile offline_access model.request model.read organization.read organization.write"
 
-# Token 获取使用 Codex CLI client（公开客户端，支持 PKCE）
+# Token retrieval uses Codex CLI client (public client, supports PKCE)
 CODEX_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
 CODEX_REDIRECT_URI = "http://localhost:1455/auth/callback"
 CODEX_SCOPE = "openid email profile offline_access"
 
-# Sentinel（PoW 防护）- 版本号可能随 OpenAI 更新而变化（支持通过环境变量覆盖）
+# Sentinel (PoW protection) - version numbers may change with OpenAI updates (supports override via environment variables)
 SENTINEL_BASE = os.environ.get("SENTINEL_BASE_URL", "https://sentinel.openai.com")
 SENTINEL_SDK_VERSION = os.environ.get("SENTINEL_SDK_VERSION", "20260124ceb8")
 SENTINEL_FRAME_VERSION = os.environ.get("SENTINEL_FRAME_VERSION", "20260219f9f6")
@@ -76,10 +76,10 @@ SENTINEL_SDK_URL = f"{SENTINEL_BASE}/sentinel/{SENTINEL_SDK_VERSION}/sdk.js"
 SENTINEL_REQ_URL = f"{SENTINEL_BASE}/backend-api/sentinel/req"
 SENTINEL_FRAME_URL = f"{SENTINEL_BASE}/backend-api/sentinel/frame.html?sv={SENTINEL_FRAME_VERSION}"
 
-# OAuth consent 页面表单选择器
+# OAuth consent page form selector
 OAUTH_CONSENT_FORM_SELECTOR = 'form[action*="/sign-in-with-chatgpt/"][action*="/consent"]'
 
-# OpenAI API 端点
+# OpenAI API endpoints
 OPENAI_API_ENDPOINTS = {
     "sentinel": SENTINEL_REQ_URL,
     "signup": f"{OPENAI_AUTH}/api/accounts/authorize/continue",
@@ -90,23 +90,23 @@ OPENAI_API_ENDPOINTS = {
     "select_workspace": f"{OPENAI_AUTH}/api/accounts/workspace/select",
 }
 
-# OpenAI 页面类型（用于判断账号状态）
+# OpenAI page types (used to determine account status)
 OPENAI_PAGE_TYPES = {
-    "EMAIL_OTP_VERIFICATION": "email_otp_verification",  # 已注册账号，需要 OTP 验证
-    "PASSWORD_REGISTRATION": "password",  # 新账号，需要设置密码
+    "EMAIL_OTP_VERIFICATION": "email_otp_verification",  # Registered account, requires OTP verification
+    "PASSWORD_REGISTRATION": "password",  # New account, needs password setup
 }
 
 # ============================================================================
-# 邮箱服务相关常量
+# Email service related constants
 # ============================================================================
 
-# Tempmail.lol API 端点
+# Tempmail.lol API endpoints
 TEMPMAIL_API_ENDPOINTS = {
     "create_inbox": "/inbox/create",
     "get_inbox": "/inbox",
 }
 
-# 自定义域名邮箱 API 端点
+# Custom domain email API endpoints
 CUSTOM_DOMAIN_API_ENDPOINTS = {
     "get_config": "/api/config",
     "create_email": "/api/emails/generate",
@@ -116,7 +116,7 @@ CUSTOM_DOMAIN_API_ENDPOINTS = {
     "get_message": "/api/emails/{emailId}/{messageId}",
 }
 
-# 邮箱服务默认配置
+# Email service default configuration
 EMAIL_SERVICE_DEFAULTS = {
     "tempmail": {
         "base_url": "https://api.tempmail.lol/v2",
@@ -131,7 +131,7 @@ EMAIL_SERVICE_DEFAULTS = {
         "timeout": 30,
     },
     "custom_domain": {
-        "base_url": "",  # 需要用户配置
+        "base_url": "",  # Requires user configuration
         "api_key_header": "X-API-Key",
         "timeout": 30,
         "max_retries": 3,
@@ -139,44 +139,44 @@ EMAIL_SERVICE_DEFAULTS = {
 }
 
 # ============================================================================
-# 注册流程相关常量
+# Registration flow related constants
 # ============================================================================
 
-# 验证码相关
+# OTP code related
 OTP_CODE_PATTERN = r"(?<!\d)(\d{6})(?!\d)"
-OTP_MAX_ATTEMPTS = 40  # 最大轮询次数
+OTP_MAX_ATTEMPTS = 40  # Maximum polling attempts
 
-# 验证码提取正则（增强版）
-# 简单匹配：任意 6 位数字
+# OTP code extraction regex (enhanced version)
+# Simple match: any 6-digit number
 OTP_CODE_SIMPLE_PATTERN = r"(?<!\d)(\d{6})(?!\d)"
-# 语义匹配：带上下文的验证码（如 "code is 123456", "验证码 123456"）
-OTP_CODE_SEMANTIC_PATTERN = r'(?:code\s+is|验证码[是为]?\s*[:：]?\s*)(\d{6})'
+# Semantic match: OTP with context (e.g. "code is 123456", "verification code 123456")
+OTP_CODE_SEMANTIC_PATTERN = r'(?:code\s+is|verification\s*code[=:]\s*)(\d{6})'
 
-# OpenAI 验证邮件发件人
+# OpenAI verification email senders
 OPENAI_EMAIL_SENDERS = [
     "noreply@openai.com",
     "no-reply@openai.com",
-    "@openai.com",     # 精确域名匹配
-    ".openai.com",     # 子域名匹配（如 otp@tm1.openai.com）
+    "@openai.com",     # Exact domain match
+    ".openai.com",     # Subdomain match (e.g. otp@tm1.openai.com)
 ]
 
-# OpenAI 验证邮件关键词
+# OpenAI verification email keywords
 OPENAI_VERIFICATION_KEYWORDS = [
     "verify your email",
     "verification code",
-    "验证码",
+    "verification code",
     "your openai code",
     "code is",
     "one-time code",
 ]
 
-# 密码生成
+# Password generation
 PASSWORD_CHARSET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 DEFAULT_PASSWORD_LENGTH = 12
 
-# 用户信息生成（用于注册）
+# User info generation (for registration)
 
-# 常用英文名
+# Common English first names
 FIRST_NAMES = [
     "James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles",
     "Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
@@ -194,26 +194,26 @@ LAST_NAMES = [
 
 def generate_random_user_info() -> dict:
     """
-    生成随机用户信息
+    Generate random user information
 
     Returns:
-        包含 name 和 birthdate 的字典
+        Dictionary containing name and birthdate
     """
     first_name = random.choice(FIRST_NAMES)
     last_name = random.choice(LAST_NAMES)
     name = f"{first_name} {last_name}"
 
-    # 生成随机生日（25-40岁，避免边界年龄问题）
+    # Generate random birthday (age 25-40, avoiding boundary age issues)
     current_year = datetime.now().year
     birth_year = random.randint(current_year - 40, current_year - 25)
     birth_month = random.randint(1, 12)
-    # 根据月份确定天数
+    # Determine days based on month
     if birth_month in [1, 3, 5, 7, 8, 10, 12]:
         birth_day = random.randint(1, 31)
     elif birth_month in [4, 6, 9, 11]:
         birth_day = random.randint(1, 30)
     else:
-        # 2月，简化处理
+        # February, simplified handling
         birth_day = random.randint(1, 28)
 
     birthdate = f"{birth_year}-{birth_month:02d}-{birth_day:02d}"
@@ -223,14 +223,14 @@ def generate_random_user_info() -> dict:
         "birthdate": birthdate
     }
 
-# 保留默认值供兼容
+# Keep default values for compatibility
 DEFAULT_USER_INFO = {
     "name": "Neo",
     "birthdate": "2000-02-20",
 }
 
 # ============================================================================
-# 代理相关常量
+# Proxy related constants
 # ============================================================================
 
 PROXY_TYPES = ["http", "socks5", "socks5h"]
@@ -242,10 +242,10 @@ DEFAULT_PROXY_CONFIG = {
 }
 
 # ============================================================================
-# 数据库相关常量
+# Database related constants
 # ============================================================================
 
-# 数据库表名
+# Database table names
 DB_TABLE_NAMES = {
     "accounts": "accounts",
     "email_services": "email_services",
@@ -253,34 +253,34 @@ DB_TABLE_NAMES = {
     "settings": "settings",
 }
 
-# 默认设置
+# Default settings
 DEFAULT_SETTINGS = [
     # (key, value, description, category)
-    ("system.name", APP_NAME, "系统名称", "general"),
-    ("system.version", APP_VERSION, "系统版本", "general"),
-    ("logs.retention_days", "30", "日志保留天数", "general"),
+    ("system.name", APP_NAME, "System name", "general"),
+    ("system.version", APP_VERSION, "System version", "general"),
+    ("logs.retention_days", "30", "Log retention days", "general"),
     ("openai.client_id", OAUTH_CLIENT_ID, "OpenAI OAuth Client ID", "openai"),
-    ("openai.auth_url", OAUTH_AUTH_URL, "OpenAI 认证地址", "openai"),
-    ("openai.token_url", OAUTH_TOKEN_URL, "OpenAI Token 地址", "openai"),
-    ("openai.redirect_uri", OAUTH_REDIRECT_URI, "OpenAI 回调地址", "openai"),
-    ("openai.scope", OAUTH_SCOPE, "OpenAI 权限范围", "openai"),
-    ("proxy.enabled", "false", "是否启用代理", "proxy"),
-    ("proxy.type", "http", "代理类型 (http/socks5)", "proxy"),
-    ("proxy.host", "127.0.0.1", "代理主机", "proxy"),
-    ("proxy.port", "7890", "代理端口", "proxy"),
-    ("registration.max_retries", "3", "最大重试次数", "registration"),
-    ("registration.timeout", "120", "超时时间（秒）", "registration"),
-    ("registration.default_password_length", "12", "默认密码长度", "registration"),
-    ("webui.host", "0.0.0.0", "Web UI 监听主机", "webui"),
-    ("webui.port", "8000", "Web UI 监听端口", "webui"),
-    ("webui.debug", "true", "调试模式", "webui"),
+    ("openai.auth_url", OAUTH_AUTH_URL, "OpenAI Auth URL", "openai"),
+    ("openai.token_url", OAUTH_TOKEN_URL, "OpenAI Token URL", "openai"),
+    ("openai.redirect_uri", OAUTH_REDIRECT_URI, "OpenAI Callback URL", "openai"),
+    ("openai.scope", OAUTH_SCOPE, "OpenAI Permission Scope", "openai"),
+    ("proxy.enabled", "false", "Enable proxy", "proxy"),
+    ("proxy.type", "http", "Proxy type (http/socks5)", "proxy"),
+    ("proxy.host", "127.0.0.1", "Proxy host", "proxy"),
+    ("proxy.port", "7890", "Proxy port", "proxy"),
+    ("registration.max_retries", "3", "Maximum retries", "registration"),
+    ("registration.timeout", "120", "Timeout (seconds)", "registration"),
+    ("registration.default_password_length", "12", "Default password length", "registration"),
+    ("webui.host", "0.0.0.0", "Web UI listen host", "webui"),
+    ("webui.port", "8000", "Web UI listen port", "webui"),
+    ("webui.debug", "true", "Debug mode", "webui"),
 ]
 
 # ============================================================================
-# Web UI 相关常量
+# Web UI related constants
 # ============================================================================
 
-# WebSocket 事件
+# WebSocket events
 WEBSOCKET_EVENTS = {
     "CONNECT": "connect",
     "DISCONNECT": "disconnect",
@@ -290,7 +290,7 @@ WEBSOCKET_EVENTS = {
     "COMPLETE": "complete",
 }
 
-# API 响应状态码
+# API response status codes
 API_STATUS_CODES = {
     "SUCCESS": 200,
     "CREATED": 201,
@@ -302,50 +302,50 @@ API_STATUS_CODES = {
     "INTERNAL_ERROR": 500,
 }
 
-# 分页
+# Pagination
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 
 # ============================================================================
-# 错误消息
+# Error messages
 # ============================================================================
 
 ERROR_MESSAGES = {
-    # 通用错误
-    "DATABASE_ERROR": "数据库操作失败",
-    "CONFIG_ERROR": "配置错误",
-    "NETWORK_ERROR": "网络连接失败",
-    "TIMEOUT": "操作超时",
-    "VALIDATION_ERROR": "参数验证失败",
+    # General errors
+    "DATABASE_ERROR": "Database operation failed",
+    "CONFIG_ERROR": "Configuration error",
+    "NETWORK_ERROR": "Network connection failed",
+    "TIMEOUT": "Operation timed out",
+    "VALIDATION_ERROR": "Parameter validation failed",
 
-    # 邮箱服务错误
-    "EMAIL_SERVICE_UNAVAILABLE": "邮箱服务不可用",
-    "EMAIL_CREATION_FAILED": "创建邮箱失败",
-    "OTP_NOT_RECEIVED": "未收到验证码",
-    "OTP_INVALID": "验证码无效",
+    # Email service errors
+    "EMAIL_SERVICE_UNAVAILABLE": "Email service unavailable",
+    "EMAIL_CREATION_FAILED": "Failed to create email",
+    "OTP_NOT_RECEIVED": "OTP code not received",
+    "OTP_INVALID": "OTP code is invalid",
 
-    # OpenAI 相关错误
-    "OPENAI_AUTH_FAILED": "OpenAI 认证失败",
-    "OPENAI_RATE_LIMIT": "OpenAI 接口限流",
-    "OPENAI_CAPTCHA": "遇到验证码",
+    # OpenAI related errors
+    "OPENAI_AUTH_FAILED": "OpenAI authentication failed",
+    "OPENAI_RATE_LIMIT": "OpenAI API rate limited",
+    "OPENAI_CAPTCHA": "CAPTCHA encountered",
 
-    # 代理错误
-    "PROXY_FAILED": "代理连接失败",
-    "PROXY_AUTH_FAILED": "代理认证失败",
+    # Proxy errors
+    "PROXY_FAILED": "Proxy connection failed",
+    "PROXY_AUTH_FAILED": "Proxy authentication failed",
 
-    # 账户错误
-    "ACCOUNT_NOT_FOUND": "账户不存在",
-    "ACCOUNT_ALREADY_EXISTS": "账户已存在",
-    "ACCOUNT_INVALID": "账户无效",
+    # Account errors
+    "ACCOUNT_NOT_FOUND": "Account not found",
+    "ACCOUNT_ALREADY_EXISTS": "Account already exists",
+    "ACCOUNT_INVALID": "Account is invalid",
 
-    # 任务错误
-    "TASK_NOT_FOUND": "任务不存在",
-    "TASK_ALREADY_RUNNING": "任务已在运行中",
-    "TASK_CANCELLED": "任务已取消",
+    # Task errors
+    "TASK_NOT_FOUND": "Task not found",
+    "TASK_ALREADY_RUNNING": "Task is already running",
+    "TASK_CANCELLED": "Task has been cancelled",
 }
 
 # ============================================================================
-# 正则表达式
+# Regular expressions
 # ============================================================================
 
 REGEX_PATTERNS = {
@@ -356,7 +356,7 @@ REGEX_PATTERNS = {
 }
 
 # ============================================================================
-# 时间常量
+# Time constants
 # ============================================================================
 
 TIME_CONSTANTS = {
@@ -369,34 +369,34 @@ TIME_CONSTANTS = {
 
 
 # ============================================================================
-# Microsoft/Outlook 相关常量
+# Microsoft/Outlook related constants
 # ============================================================================
 
-# Microsoft OAuth2 Token 端点
+# Microsoft OAuth2 Token endpoints
 MICROSOFT_TOKEN_ENDPOINTS = {
-    # 旧版 IMAP 使用的端点
+    # Legacy IMAP endpoint
     "LIVE": "https://login.live.com/oauth20_token.srf",
-    # 新版 IMAP 使用的端点（需要特定 scope）
+    # New IMAP endpoint (requires specific scope)
     "CONSUMERS": "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
-    # Graph API 使用的端点
+    # Graph API endpoint
     "COMMON": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
 }
 
-# IMAP 服务器配置
+# IMAP server configuration
 OUTLOOK_IMAP_SERVERS = {
-    "OLD": "outlook.office365.com",  # 旧版 IMAP
-    "NEW": "outlook.live.com",       # 新版 IMAP
+    "OLD": "outlook.office365.com",  # Legacy IMAP
+    "NEW": "outlook.live.com",       # New IMAP
 }
 
 # Microsoft OAuth2 Scopes
 MICROSOFT_SCOPES = {
-    # 旧版 IMAP 不需要特定 scope
+    # Legacy IMAP does not require specific scope
     "IMAP_OLD": "",
-    # 新版 IMAP 需要的 scope
+    # Scope required for new IMAP
     "IMAP_NEW": "https://outlook.office.com/IMAP.AccessAsUser.All offline_access",
-    # Graph API 需要的 scope
+    # Scope required for Graph API
     "GRAPH_API": "https://graph.microsoft.com/.default",
 }
 
-# Outlook 提供者默认优先级
+# Outlook provider default priority
 OUTLOOK_PROVIDER_PRIORITY = ["imap_new", "imap_old", "graph_api"]

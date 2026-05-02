@@ -1,4 +1,4 @@
-"""blink.new 平台插件"""
+"""blink.new platform plugin"""
 from core.base_mailbox import BaseMailbox
 from core.base_platform import Account, AccountStatus, BasePlatform, RegisterConfig
 from core.registration import LinkSpec, ProtocolMailboxAdapter, RegistrationResult
@@ -28,7 +28,7 @@ class BlinkPlatform(BasePlatform):
         self.mailbox = mailbox
 
     def _prepare_registration_password(self, password: str | None) -> str | None:
-        # blink.new 无密码，magic link 登录
+        # blink.new is passwordless, uses magic link login
         return ""
 
     def _map_blink_result(self, result: dict) -> RegistrationResult:
@@ -72,8 +72,8 @@ class BlinkPlatform(BasePlatform):
             register_runner=_run_worker,
             link_spec=LinkSpec(
                 keyword="magic_token",
-                wait_message="等待魔法链接邮件...",
-                success_label="魔法链接",
+                wait_message="Waiting for magic link email...",
+                success_label="Magic link",
             ),
         )
 
@@ -94,13 +94,13 @@ class BlinkPlatform(BasePlatform):
 
     def get_platform_actions(self) -> list:
         return [
-            {"id": "get_account_state", "label": "查询账号状态/额度", "params": []},
-            {"id": "generate_checkout_link", "label": "生成 Pro 支付链接", "params": []},
+            {"id": "get_account_state", "label": "Query account status/credits", "params": []},
+            {"id": "generate_checkout_link", "label": "Generate Pro payment link", "params": []},
             {
                 "id": "create_api_key",
-                "label": "创建 API Key",
+                "label": "Create API Key",
                 "params": [
-                    {"key": "name", "label": "Key 名称", "type": "text"},
+                    {"key": "name", "label": "Key name", "type": "text"},
                 ],
             },
         ]
@@ -115,12 +115,12 @@ class BlinkPlatform(BasePlatform):
             summary = dict(state.get("summary") or {})
             workspace_id = str(state.get("workspace_id") or summary.get("workspace_id") or "")
             if not workspace_id:
-                return {"ok": False, "error": "未获取到 workspace_id，无法生成 Blink 支付链接"}
+                return {"ok": False, "error": "Failed to get workspace_id, cannot generate Blink payment link"}
 
             plan_id = str(params.get("plan_id") or "pro").strip().lower() or "pro"
             price_id = str(params.get("price_id") or BLINK_PRICE_IDS.get(plan_id) or "").strip()
             if not price_id:
-                return {"ok": False, "error": f"未配置 plan_id={plan_id} 对应的 price_id"}
+                return {"ok": False, "error": f"No price_id configured for plan_id={plan_id}"}
 
             workspace_slug = str(state.get("workspace_slug") or summary.get("workspace_slug") or "").strip()
             cancel_url = str(
@@ -142,7 +142,7 @@ class BlinkPlatform(BasePlatform):
             )
             url = str(checkout.get("url") or "").strip()
             if not url:
-                return {"ok": False, "error": "Blink 未返回支付链接"}
+                return {"ok": False, "error": "Blink did not return payment link"}
             return {
                 "ok": True,
                 "data": {
@@ -154,7 +154,7 @@ class BlinkPlatform(BasePlatform):
                     "plan_id": plan_id,
                     "price_id": price_id,
                     "account_state": summary,
-                    "message": "Blink Pro 支付链接已生成",
+                    "message": "Blink Pro payment link generated",
                 },
             }
 
@@ -163,11 +163,11 @@ class BlinkPlatform(BasePlatform):
             summary = dict(state.get("summary") or {})
             workspace_id = str(state.get("workspace_id") or summary.get("workspace_id") or "").strip()
             if not workspace_id:
-                return {"ok": False, "error": "未获取到 workspace_id，无法创建 Blink API Key"}
+                return {"ok": False, "error": "Failed to get workspace_id, cannot create Blink API Key"}
 
             workspace_slug = str(state.get("workspace_slug") or summary.get("workspace_slug") or "").strip()
             raw_name = str(params.get("name") or "").strip()
-            key_name = raw_name or "开发 Key"
+            key_name = raw_name or "Dev Key"
 
             client = BlinkRegister(proxy=self.config.proxy if self.config else None)
             client._log = self.log
@@ -180,7 +180,7 @@ class BlinkPlatform(BasePlatform):
             )
             api_key = str(payload.get("key_value") or "").strip()
             if not api_key:
-                return {"ok": False, "error": "Blink 未返回 API Key 明文"}
+                return {"ok": False, "error": "Blink did not return API Key plaintext"}
             return {
                 "ok": True,
                 "data": {
@@ -191,8 +191,8 @@ class BlinkPlatform(BasePlatform):
                     "api_key": api_key,
                     "workspace_id": workspace_id,
                     "workspace_slug": workspace_slug,
-                    "message": "Blink API Key 已创建",
+                    "message": "Blink API Key created",
                 },
             }
 
-        raise NotImplementedError(f"未知操作: {action_id}")
+        raise NotImplementedError(f"Unknown action: {action_id}")

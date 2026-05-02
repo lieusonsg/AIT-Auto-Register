@@ -1,4 +1,4 @@
-"""Grok OAuth 浏览器流程。"""
+"""Grok OAuth browser flow."""
 import time
 
 from core.oauth_browser import (
@@ -39,9 +39,9 @@ def register_with_browser_oauth(
         if chrome_user_data_dir or chrome_cdp_url:
             browser.auto_select_google_account()
         else:
-            log_fn(f"请在浏览器中完成登录，可使用 {method_text}，最长等待 {timeout} 秒")
+            log_fn(f"Please complete login in the browser, you can use {method_text}, waiting up to {timeout} seconds")
             if email_hint:
-                log_fn(f"请确认最终登录账号邮箱为: {email_hint}")
+                log_fn(f"Please confirm the final login email is: {email_hint}")
 
         sso = browser.wait_for_cookie_value(
             ["sso"],
@@ -49,7 +49,7 @@ def register_with_browser_oauth(
             domain_substrings=("x.ai",),
         )
         if not sso:
-            raise RuntimeError(f"Grok 浏览器登录未在 {timeout} 秒内拿到 SSO Cookie")
+            raise RuntimeError(f"Grok browser login did not get SSO Cookie within {timeout} seconds")
 
         resolved_email = finalize_oauth_email("", email_hint, "Grok")
         return {

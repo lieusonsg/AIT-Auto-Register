@@ -1,5 +1,5 @@
 #!/bin/bash
-# 将 Python 后端打包为单文件可执行程序，输出到 electron/backend/
+# Package Python backend as a single executable, output to electron/backend/
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -7,14 +7,14 @@ BACKEND_DIR="$SCRIPT_DIR/../"
 
 cd "$BACKEND_DIR"
 
-# 定位 patchright driver（含 node 二进制 + cli.js）
+# Locate patchright driver (contains node binary + cli.js)
 DRIVER_DIR="$(.venv/bin/python -c "import pathlib, patchright; print(pathlib.Path(patchright.__file__).parent / 'driver')")"
 echo "[info] patchright driver: $DRIVER_DIR"
 
-echo "[1/3] 清理旧产物..."
+echo "[1/3] Cleaning old artifacts..."
 rm -rf dist build backend.spec
 
-echo "[2/3] 打包后端..."
+echo "[2/3] Packaging backend..."
 .venv/bin/python -m PyInstaller --onefile --name backend \
   --add-data="platforms:platforms" \
   --add-data="core:core" \
@@ -52,9 +52,9 @@ echo "[2/3] 打包后端..."
   --collect-all=hypercorn \
   main.py
 
-echo "[3/3] 复制产物到 electron/backend/"
+echo "[3/3] Copying artifacts to electron/backend/"
 mkdir -p "$SCRIPT_DIR/backend/backend"
 cp dist/backend "$SCRIPT_DIR/backend/backend/backend"
 
-echo "完成! 可执行文件: $SCRIPT_DIR/backend/backend/backend"
+echo "Done! Executable: $SCRIPT_DIR/backend/backend/backend"
 ls -lh "$SCRIPT_DIR/backend/backend/backend"

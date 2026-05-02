@@ -122,13 +122,13 @@ class TestCreateProxyProvider:
         assert isinstance(provider, RotatingProxyProvider)
 
     def test_api_extract_missing_url(self):
-        with pytest.raises(RuntimeError, match="未配置"):
+        with pytest.raises(RuntimeError, match="not configured"):
             create_proxy_provider("api_extract", {})
 
     def test_rotating_missing_gateway(self):
-        with pytest.raises(RuntimeError, match="未配置"):
+        with pytest.raises(RuntimeError, match="not configured"):
             create_proxy_provider("rotating_gateway", {})
 
     def test_unknown_provider(self):
-        with pytest.raises(RuntimeError, match="未知"):
+        with pytest.raises(RuntimeError, match="Unknown"):
             create_proxy_provider("unknown", {})

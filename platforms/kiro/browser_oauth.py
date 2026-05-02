@@ -1,4 +1,4 @@
-"""Kiro OAuth 浏览器流程。"""
+"""Kiro OAuth browser flow."""
 from urllib.parse import parse_qs, urlparse
 
 import cbor2
@@ -18,9 +18,9 @@ def _exchange_callback_tokens(reg: KiroRegister, callback_url: str):
     auth_code = (query.get("code") or [""])[0]
     redirect_state = (query.get("state") or [""])[0]
     if not auth_code:
-        raise RuntimeError("Kiro OAuth 回调里缺少 code")
+        raise RuntimeError("Kiro OAuth callback missing code")
     if redirect_state and redirect_state != reg.state:
-        raise RuntimeError("Kiro OAuth state 不匹配")
+        raise RuntimeError("Kiro OAuth state mismatch")
 
     exchange_body = cbor2.dumps({
         "code": auth_code,
@@ -48,11 +48,11 @@ def _exchange_callback_tokens(reg: KiroRegister, callback_url: str):
         cookies={"kiro-visitor-id": reg.vid},
     )
     if response.status_code != 200:
-        raise RuntimeError(f"Kiro ExchangeToken 失败: HTTP {response.status_code}")
+        raise RuntimeError(f"Kiro ExchangeToken failed: HTTP {response.status_code}")
     data = cbor2.loads(response.content)
     access_token = data.get("accessToken", "")
     if not access_token:
-        raise RuntimeError("Kiro ExchangeToken 响应里缺少 accessToken")
+        raise RuntimeError("Kiro ExchangeToken response missing accessToken")
     return {
         "accessToken": access_token,
         "csrfToken": data.get("csrfToken", ""),
@@ -76,7 +76,7 @@ def register_with_browser_oauth(
     reg.log = log_fn
     redirect_url = reg.step1_kiro_init()
     if not redirect_url:
-        raise RuntimeError("Kiro InitiateLogin 失败")
+        raise RuntimeError("Kiro InitiateLogin failed")
 
     with OAuthBrowser(
         proxy=proxy,
@@ -92,16 +92,16 @@ def register_with_browser_oauth(
         if chrome_user_data_dir or chrome_cdp_url:
             browser.auto_select_google_account()
         else:
-            log_fn(f"请在浏览器中完成登录，可使用 {method_text}，最长等待 {timeout} 秒")
+            log_fn(f"Please complete login in the browser, you can use {method_text}, waiting up to {timeout} seconds")
             if email_hint:
-                log_fn(f"请确认最终登录账号邮箱为: {email_hint}")
+                log_fn(f"Please confirm the final login account email is: {email_hint}")
 
         callback_url = browser.wait_for_url(
             lambda url: url.startswith(f"{KIRO}/signin/oauth") and "code=" in url,
             timeout=timeout,
         )
         if not callback_url:
-            raise RuntimeError(f"Kiro 浏览器登录未在 {timeout} 秒内完成")
+            raise RuntimeError(f"Kiro browser login did not complete within {timeout} seconds")
 
         token_info = _exchange_callback_tokens(reg, callback_url)
         resolved_email = finalize_oauth_email("", email_hint, "Kiro")

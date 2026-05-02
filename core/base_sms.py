@@ -1,4 +1,4 @@
-"""接码服务基类 + SMS-Activate / HeroSMS 实现。"""
+"""SMS verification base class + SMS-Activate / HeroSMS implementations."""
 from __future__ import annotations
 
 import hashlib
@@ -147,9 +147,9 @@ class SmsActivateProvider(BaseSmsProvider):
             )
 
         if "NO_NUMBERS" in result:
-            raise RuntimeError(f"SMS-Activate: 当前无可用号码 (service={service_code}, country={country_id})")
+            raise RuntimeError(f"SMS-Activate: no numbers available (service={service_code}, country={country_id})")
         if "NO_BALANCE" in result:
-            raise RuntimeError("SMS-Activate: 余额不足")
+            raise RuntimeError("SMS-Activate: insufficient balance")
         raise RuntimeError(f"SMS-Activate getNumber failed: {result}")
 
     def get_code(self, activation_id: str, *, timeout: int = 120) -> str:
@@ -227,7 +227,7 @@ def _safe_bool(value, default: bool) -> bool:
         return default
     if isinstance(value, bool):
         return value
-    return str(value).strip().lower() not in {"0", "false", "no", "off", "否"}
+    return str(value).strip().lower() not in {"0", "false", "no", "off"}
 
 
 def _normalize_hero_proxy(proxy: str | None) -> str | None:
@@ -462,8 +462,8 @@ class HeroSmsProvider(BaseSmsProvider):
 
     def _request_number_raw(self, service: str, country: str) -> dict:
         common = {"service": service, "country": country}
-        # HeroSMS API 在不传 maxPrice 时某些国家/服务返回 NO_NUMBERS
-        # 传一个较大的值表示"不限价格"
+        # HeroSMS API may return NO_NUMBERS for some countries/services without maxPrice
+        # Use a larger value to indicate "no price limit"
         if self.max_price > 0:
             common["maxPrice"] = self.max_price
         else:
@@ -493,7 +493,7 @@ class HeroSmsProvider(BaseSmsProvider):
                     }
             raise RuntimeError(text[:200])
         except Exception as exc:
-            raise RuntimeError(f"HeroSMS 获取号码失败: V2={v2_error}; V1={exc}") from exc
+            raise RuntimeError(f"HeroSMS get number failed: V2={v2_error}; V1={exc}") from exc
 
     @staticmethod
     def _format_phone(number_info: dict) -> str:
@@ -527,7 +527,7 @@ class HeroSmsProvider(BaseSmsProvider):
                 activation_id = str(number_info.get("activationId") or "")
                 phone = self._format_phone(number_info)
                 if not activation_id or not phone.strip("+"):
-                    raise RuntimeError("HeroSMS 返回的号码信息不完整")
+                    raise RuntimeError("HeroSMS returned incomplete number info")
                 cache = {
                     **self._cache_identity(service_code, country_id),
                     "activation_id": activation_id,
@@ -786,7 +786,7 @@ class HeroSmsProvider(BaseSmsProvider):
 
     def mark_send_failed(self, activation_id: str, reason: str = "") -> None:
         reason_text = str(reason or "").lower()
-        if any(keyword in reason_text for keyword in ("limit", "already", "too many", "exceeded", "maximum", "上限", "已达")):
+        if any(keyword in reason_text for keyword in ("limit", "already", "too many", "exceeded", "maximum")):
             self._stop_reuse("phone limit reached")
         else:
             self._stop_reuse(reason or "phone rejected")
@@ -835,7 +835,7 @@ def create_sms_provider(provider_key: str, config: dict) -> BaseSmsProvider:
     if provider_key in ("sms_activate", "sms_activate_api"):
         api_key = config.get("sms_activate_api_key", "")
         if not api_key:
-            raise RuntimeError("SMS-Activate 未配置 API Key")
+            raise RuntimeError("SMS-Activate API Key not configured")
         return SmsActivateProvider(
             api_key=api_key,
             default_country=config.get("sms_activate_country", config.get("sms_activate_default_country", "")),
@@ -844,7 +844,7 @@ def create_sms_provider(provider_key: str, config: dict) -> BaseSmsProvider:
     if provider_key in ("herosms", "herosms_api"):
         api_key = str(config.get("herosms_api_key", "") or "").strip()
         if not api_key:
-            raise RuntimeError("HeroSMS 未配置 API Key")
+            raise RuntimeError("HeroSMS API Key not configured")
         return HeroSmsProvider(
             api_key=api_key,
             default_service=str(config.get("sms_service") or config.get("herosms_service") or config.get("herosms_default_service") or HERO_SMS_DEFAULT_SERVICE),
@@ -854,7 +854,7 @@ def create_sms_provider(provider_key: str, config: dict) -> BaseSmsProvider:
             reuse_phone_to_max=_safe_bool(config.get("register_reuse_phone_to_max"), True),
             phone_success_max=max(0, _safe_int(config.get("register_phone_extra_max") or config.get("register_phone_success_max"), 3)),
         )
-    raise RuntimeError(f"未知的接码服务: {provider_key}")
+    raise RuntimeError(f"Unknown SMS provider: {provider_key}")
 
 
 class PhoneCallbackController:
@@ -885,8 +885,8 @@ class PhoneCallbackController:
                 _HERO_SMS_VERIFY_LOCK.acquire()
                 self._verify_lock_acquired = True
             country_label = self.country or self.config.get("sms_country") or self.config.get("sms_activate_country") or "default"
-            self.log(f"已进入 add_phone，准备租用手机号: provider={self.provider_key} service={self.service} country={country_label}")
-            self.log(f"正在从 {self.provider_key} 获取手机号...")
+            self.log(f"Entered add_phone, preparing to rent phone number: provider={self.provider_key} service={self.service} country={country_label}")
+            self.log(f"Getting phone number from {self.provider_key}...")
             try:
                 self.activation = provider.get_number(service=self.service, country=self.country)
             except Exception:
@@ -896,21 +896,21 @@ class PhoneCallbackController:
                 raise
             self.phase = "need_code"
             reused = bool((self.activation.metadata or {}).get("reused"))
-            reuse_label = "复用号码" if reused else "新号码"
-            self.log(f"已成功租到号码({reuse_label}): {self.activation.phone_number} (activation_id={self.activation.activation_id})")
+            reuse_label = "reused" if reused else "new"
+            self.log(f"Successfully rented phone number ({reuse_label}): {self.activation.phone_number} (activation_id={self.activation.activation_id})")
             return self.activation.phone_number
 
         if self.phase == "need_code" and self.activation:
-            self.log(f"等待短信验证码... (activation_id={self.activation.activation_id})")
+            self.log(f"Waiting for SMS verification code... (activation_id={self.activation.activation_id})")
             code = provider.get_code(self.activation.activation_id, timeout=120)
             if code:
-                self.log(f"收到验证码: {code}")
+                self.log(f"Received verification code: {code}")
                 if getattr(provider, "auto_report_success_on_code", True):
                     self.report_success()
                 else:
                     self.awaiting_external_success = True
             else:
-                self.log(f"⚠️ 未收到验证码: activation_id={self.activation.activation_id}")
+                self.log(f"Warning: No verification code received: activation_id={self.activation.activation_id}")
             return code
         return ""
 
@@ -948,7 +948,7 @@ class PhoneCallbackController:
             self.completed = True
             self.phase = "done"
             self.awaiting_external_success = False
-            self.log(f"短信验证成功，已标记号码完成使用: activation_id={self.activation.activation_id}")
+            self.log(f"SMS verification successful, number marked as finished: activation_id={self.activation.activation_id}")
         if self._verify_lock_acquired:
             _HERO_SMS_VERIFY_LOCK.release()
             self._verify_lock_acquired = False
@@ -961,7 +961,7 @@ class PhoneCallbackController:
                     self.report_success()
                 else:
                     provider.cancel(self.activation.activation_id)
-                    self.log(f"已释放未使用号码: activation_id={self.activation.activation_id}")
+                    self.log(f"Released unused number: activation_id={self.activation.activation_id}")
             except Exception:
                 pass
         if self._verify_lock_acquired:

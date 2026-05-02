@@ -14,7 +14,7 @@ class YesCaptcha(BaseCaptcha):
     def from_config(cls, config: dict) -> 'YesCaptcha':
         client_key = str(config.get("yescaptcha_key", "") or "")
         if not client_key:
-            raise RuntimeError("YesCaptcha Key 未配置")
+            raise RuntimeError("YesCaptcha Key not configured")
         return cls(client_key)
 
     def solve_turnstile(self, page_url: str, site_key: str) -> str:
@@ -26,7 +26,7 @@ class YesCaptcha(BaseCaptcha):
         }, timeout=30)
         task_id = r.json().get("taskId")
         if not task_id:
-            raise RuntimeError(f"YesCaptcha 创建任务失败: {r.text}")
+            raise RuntimeError(f"YesCaptcha failed to create task: {r.text}")
         for _ in range(60):
             time.sleep(3)
             d = insecure_request(requests.post, f"{self.api}/getTaskResult", json={
@@ -35,8 +35,8 @@ class YesCaptcha(BaseCaptcha):
             if d.get("status") == "ready":
                 return d["solution"]["token"]
             if d.get("errorId", 0) != 0:
-                raise RuntimeError(f"YesCaptcha 错误: {d}")
-        raise TimeoutError("YesCaptcha Turnstile 超时")
+                raise RuntimeError(f"YesCaptcha error: {d}")
+        raise TimeoutError("YesCaptcha Turnstile timed out")
 
     def solve_image(self, image_b64: str) -> str:
         raise NotImplementedError

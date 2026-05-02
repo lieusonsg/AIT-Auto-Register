@@ -1,4 +1,4 @@
-"""Cursor 平台插件"""
+"""Cursor platform plugin"""
 from core.base_platform import BasePlatform, Account, AccountStatus, RegisterConfig
 from core.base_mailbox import BaseMailbox
 from core.registration import BrowserRegistrationAdapter, OtpSpec, ProtocolMailboxAdapter, ProtocolOAuthAdapter, RegistrationCapability, RegistrationResult
@@ -86,7 +86,7 @@ class CursorPlatform(BasePlatform):
             ),
             oauth_runner=self._run_browser_oauth,
             capability=RegistrationCapability(oauth_headless_requires_browser_reuse=True),
-            otp_spec=OtpSpec(wait_message="等待 Cursor 邮箱验证码...", success_label="验证码"),
+            otp_spec=OtpSpec(wait_message="Waiting for Cursor email verification code...", success_label="verification code"),
             use_captcha_for_mailbox=True,
         )
 
@@ -109,7 +109,7 @@ class CursorPlatform(BasePlatform):
                 otp_callback=artifacts.otp_callback,
                 captcha_solver=artifacts.captcha_solver,
             ),
-            otp_spec=OtpSpec(wait_message="等待验证码..."),
+            otp_spec=OtpSpec(wait_message="Waiting for verification code..."),
             use_captcha=True,
         )
 
@@ -127,11 +127,11 @@ class CursorPlatform(BasePlatform):
             return False
 
     def get_platform_actions(self) -> list:
-        """返回平台支持的操作列表"""
+        """Return the list of supported platform actions."""
         return [
-            {"id": "switch_account", "label": "切换到桌面应用", "params": []},
-            {"id": "get_account_state", "label": "查询账号状态/额度提示", "params": []},
-            {"id": "generate_trial_link", "label": "生成 7 天 Pro 链接", "params": []},
+            {"id": "switch_account", "label": "Switch to desktop app", "params": []},
+            {"id": "get_account_state", "label": "Query account status/quota", "params": []},
+            {"id": "generate_trial_link", "label": "Generate 7-day Pro link", "params": []},
         ]
 
     def get_desktop_state(self) -> dict:
@@ -140,7 +140,7 @@ class CursorPlatform(BasePlatform):
         return get_cursor_desktop_state()
 
     def execute_action(self, action_id: str, account: Account, params: dict) -> dict:
-        """执行平台操作"""
+        """Execute platform action."""
         if action_id == "switch_account":
             from platforms.cursor.switch import (
                 get_cursor_billing_info,
@@ -156,8 +156,8 @@ class CursorPlatform(BasePlatform):
             
             token = account.token
             if not token:
-                return {"ok": False, "error": "账号缺少 token"}
-            
+                return {"ok": False, "error": "Account missing token"}
+
             ok, msg = switch_cursor_account(token)
             if not ok:
                 return {"ok": False, "error": msg}
@@ -185,10 +185,10 @@ class CursorPlatform(BasePlatform):
                     },
                     "desktop_app_state": get_cursor_desktop_state(),
                     "restart": {"ok": restart_ok, "message": restart_msg},
-                    "quota_note": "Cursor 可查询 usage，但部分账号只返回已用量；maxRequestUsage/maxTokenUsage 可能为空，无法保证总能计算剩余额度。",
+                    "quota_note": "Cursor can query usage, but some accounts only return used amounts; maxRequestUsage/maxTokenUsage may be empty, cannot guarantee remaining quota can always be calculated.",
                 }
             }
-        
+
         elif action_id in {"get_user_info", "get_account_state"}:
             from platforms.cursor.switch import (
                 get_cursor_billing_info,
@@ -202,8 +202,8 @@ class CursorPlatform(BasePlatform):
             
             token = account.token
             if not token:
-                return {"ok": False, "error": "账号缺少 token"}
-            
+                return {"ok": False, "error": "Account missing token"}
+
             user_info = get_cursor_user_info(token)
             if user_info:
                 billing_info = get_cursor_billing_info(token) or {}
@@ -228,17 +228,17 @@ class CursorPlatform(BasePlatform):
                             "matches_target": current.get("token") == token if current.get("token") else False,
                         },
                         "desktop_app_state": get_cursor_desktop_state(),
-                        "quota_note": "Cursor 可查询 usage，但部分账号只返回已用量；maxRequestUsage/maxTokenUsage 可能为空，无法保证总能计算剩余额度。",
+                        "quota_note": "Cursor can query usage, but some accounts only return used amounts; maxRequestUsage/maxTokenUsage may be empty, cannot guarantee remaining quota can always be calculated.",
                     },
                 }
-            return {"ok": False, "error": "获取用户信息失败"}
+            return {"ok": False, "error": "Failed to get user info"}
 
         elif action_id == "generate_trial_link":
             from platforms.cursor.switch import generate_cursor_checkout_link, get_cursor_billing_info
 
             token = account.token
             if not token:
-                return {"ok": False, "error": "账号缺少 token"}
+                return {"ok": False, "error": "Account missing token"}
 
             billing_info = get_cursor_billing_info(token) or {}
             checkout_url = generate_cursor_checkout_link(
@@ -249,16 +249,16 @@ class CursorPlatform(BasePlatform):
                 yearly=False,
             )
             if not checkout_url:
-                return {"ok": False, "error": "生成 7 天 Pro 链接失败"}
+                return {"ok": False, "error": "Failed to generate 7-day Pro link"}
             return {
                 "ok": True,
                 "data": {
                     "url": checkout_url,
-                    "message": "7 天 Cursor Pro 试用链接已生成",
+                    "message": "7-day Cursor Pro trial link generated",
                     "billing_info": billing_info,
                     "trial_eligible": billing_info.get("trialEligible"),
                     "trial_length_days": billing_info.get("trialLengthDays"),
                 },
             }
         
-        raise NotImplementedError(f"未知操作: {action_id}")
+        raise NotImplementedError(f"Unknown action: {action_id}")

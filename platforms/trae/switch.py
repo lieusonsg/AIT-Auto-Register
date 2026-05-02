@@ -1,6 +1,6 @@
 """
-Trae.ai 账号切换 —— 写入本地配置文件，Trae IDE 自动识别
-支持 macOS / Windows / Linux
+Trae.ai account switching -- write to local config file, Trae IDE auto-detects
+Supports macOS / Windows / Linux
 """
 
 import os
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_trae_config_dir() -> str:
-    """获取 Trae 配置目录路径"""
+    """Get Trae configuration directory path"""
     system = platform.system()
     
     if system == "Darwin":  # macOS
@@ -34,13 +34,13 @@ def _get_trae_config_dir() -> str:
 
 
 def _get_trae_storage_path() -> str:
-    """获取 Trae storage.json 路径"""
+    """Get Trae storage.json path"""
     config_dir = _get_trae_config_dir()
     return os.path.join(config_dir, "globalStorage", "storage.json")
 
 
 def _atomic_write(filepath: str, content: str):
-    """原子写入：先写临时文件，再 rename"""
+    """Atomic write: write temp file first, then rename"""
     dir_path = os.path.dirname(filepath)
     os.makedirs(dir_path, exist_ok=True)
     
@@ -66,30 +66,30 @@ def switch_trae_account(
     region: str = ""
 ) -> Tuple[bool, str]:
     """
-    切换 Trae 账号（写入 storage.json，需要重启 Trae）
-    
+    Switch Trae account (write to storage.json, requires Trae restart)
+
     Args:
         token: Trae API token
-        user_id: 用户 ID
-        email: 邮箱
-        region: 区域
-    
+        user_id: User ID
+        email: Email
+        region: Region
+
     Returns:
         (success, message)
     """
     try:
         storage_path = _get_trae_storage_path()
         
-        # 读取现有配置
+        # Read existing config
         storage_data = {}
         if os.path.exists(storage_path):
             try:
                 with open(storage_path, "r", encoding="utf-8") as f:
                     storage_data = json.load(f)
             except Exception as e:
-                logger.warning(f"读取现有配置失败，将创建新配置: {e}")
+                logger.warning(f"Failed to read existing config, will create new config: {e}")
         
-        # 更新 token 和用户信息
+        # Update token and user info
         storage_data["trae.token"] = token
         if user_id:
             storage_data["trae.userId"] = user_id
@@ -98,40 +98,40 @@ def switch_trae_account(
         if region:
             storage_data["trae.region"] = region
         
-        # 原子写入
+        # Atomic write
         content = json.dumps(storage_data, indent=2, ensure_ascii=False)
         _atomic_write(storage_path, content)
         
-        return True, "切换成功，请重启 Trae IDE 使新账号生效"
+        return True, "Switch successful, please restart Trae IDE for the new account to take effect"
     
     except Exception as e:
-        logger.error(f"Trae 账号切换失败: {e}")
-        return False, f"切换失败: {str(e)}"
+        logger.error(f"Trae account switch failed: {e}")
+        return False, f"Switch failed: {str(e)}"
 
 
 def restart_trae_ide() -> Tuple[bool, str]:
-    """关闭并重启 Trae IDE"""
+    """Close and restart Trae IDE"""
     system = platform.system()
     
     try:
         if system == "Darwin":  # macOS
-            # 关闭 Trae
+            # Close Trae
             subprocess.run(
                 ["osascript", "-e", 'quit app "Trae"'],
                 capture_output=True,
                 timeout=5
             )
             time.sleep(2.0)
-            
-            # 启动 Trae
+
+            # Start Trae
             trae_app = "/Applications/Trae.app"
             if os.path.exists(trae_app):
                 subprocess.Popen(["open", "-a", "Trae"])
-                return True, "Trae IDE 已重启"
-            return True, "已关闭 Trae IDE（未找到应用路径，请手动启动）"
+                return True, "Trae IDE restarted"
+            return True, "Trae IDE closed (application path not found, please start manually)"
         
         elif system == "Windows":
-            # 关闭 Trae
+            # Close Trae
             subprocess.run(
                 ["taskkill", "/IM", "Trae.exe", "/F"],
                 capture_output=True,
@@ -139,39 +139,39 @@ def restart_trae_ide() -> Tuple[bool, str]:
                 timeout=5
             )
             time.sleep(1.5)
-            
-            # 启动 Trae
+
+            # Start Trae
             localappdata = os.environ.get("LOCALAPPDATA", "")
             trae_exe = os.path.join(localappdata, "Programs", "Trae", "Trae.exe")
             if os.path.exists(trae_exe):
                 subprocess.Popen([trae_exe])
-                return True, "Trae IDE 已重启"
-            return True, "已关闭 Trae IDE（未找到应用路径，请手动启动）"
+                return True, "Trae IDE restarted"
+            return True, "Trae IDE closed (application path not found, please start manually)"
         
         else:  # Linux
-            # 关闭 Trae
+            # Close Trae
             subprocess.run(["pkill", "-f", "trae"], capture_output=True, timeout=5)
             time.sleep(1.5)
-            
-            # 启动 Trae
+
+            # Start Trae
             for path in ["/usr/bin/trae", os.path.expanduser("~/.local/bin/trae")]:
                 if os.path.exists(path):
                     subprocess.Popen([path])
-                    return True, "Trae IDE 已重启"
-            
+                    return True, "Trae IDE restarted"
+
             try:
                 subprocess.Popen(["trae"])
-                return True, "Trae IDE 已重启"
+                return True, "Trae IDE restarted"
             except FileNotFoundError:
-                return True, "已关闭 Trae IDE（未找到应用路径，请手动启动）"
+                return True, "Trae IDE closed (application path not found, please start manually)"
     
     except Exception as e:
-        logger.error(f"Trae IDE 重启失败: {e}")
-        return False, f"重启失败: {str(e)}"
+        logger.error(f"Trae IDE restart failed: {e}")
+        return False, f"Restart failed: {str(e)}"
 
 
 def read_current_trae_account() -> dict | None:
-    """读取当前 Trae IDE 正在使用的账号信息"""
+    """Read current Trae IDE account info"""
     storage_path = _get_trae_storage_path()
     
     if not os.path.exists(storage_path):
@@ -192,12 +192,12 @@ def read_current_trae_account() -> dict | None:
         return None
     
     except Exception as e:
-        logger.error(f"读取 Trae 配置失败: {e}")
+        logger.error(f"Failed to read Trae config: {e}")
         return None
 
 
 def get_trae_user_info(token: str) -> dict | None:
-    """通过 token 获取用户信息"""
+    """Get user info via token"""
     from curl_cffi import requests as curl_req
     
     try:
@@ -219,5 +219,5 @@ def get_trae_user_info(token: str) -> dict | None:
         return None
     
     except Exception as e:
-        logger.error(f"获取 Trae 用户信息失败: {e}")
+        logger.error(f"Failed to get Trae user info: {e}")
         return None

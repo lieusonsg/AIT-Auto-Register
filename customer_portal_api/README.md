@@ -1,11 +1,11 @@
 # Customer Portal API
 
-独立的 C 端/管理端后端服务，复用当前仓库已有的平台注册内核、平台元数据、任务运行时、账号资产、代理和系统能力。
+A standalone customer-facing / admin backend service that reuses the existing platform registration core, platform metadata, task runtime, account assets, proxy management, and system capabilities from this repository.
 
-## 已实现能力
+## Implemented Capabilities
 
-- 认证接口：登录、刷新 token、登出、当前用户
-- 用户端接口：
+- Authentication: login, token refresh, logout, current user
+- User endpoints:
   - `GET /api/app/platforms`
   - `GET /api/app/config/options`
   - `GET /api/app/products`
@@ -21,14 +21,14 @@
   - `GET /api/app/subscriptions`
   - `GET /api/app/profile`
   - `PATCH /api/app/profile`
-- 管理端接口：
-  - 用户、角色、权限、平台授权、商品目录
-  - 平台、配置、注册任务、任务查询、任务日志
-  - 账号、平台动作、代理、Solver 状态
-- 支付接口：
+- Admin endpoints:
+  - Users, roles, permissions, platform authorization, product catalog
+  - Platforms, configuration, registration tasks, task queries, task logs
+  - Accounts, platform actions, proxies, Solver status
+- Payment endpoints:
   - `POST /api/payment/callback/{channel_code}`
 
-## 目录
+## Directory
 
 ```text
 customer_portal_api/
@@ -47,11 +47,11 @@ customer_portal_api/
 └── main.py
 ```
 
-## 本地启动
+## Local Setup
 
-### 1. 安装依赖
+### 1. Install dependencies
 
-在仓库根目录执行：
+From the repository root:
 
 ```bash
 python3 -m venv .venv
@@ -59,21 +59,21 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-如果你只想按照新项目路径安装，也可以：
+Or install only the portal dependencies:
 
 ```bash
 pip install -r customer_portal_api/requirements.txt
 ```
 
-### 2. 配置环境变量
+### 2. Configure environment variables
 
-复制环境变量模板：
+Copy the environment template:
 
 ```bash
 cp customer_portal_api/.env.example customer_portal_api/.env
 ```
 
-常用变量：
+Common variables:
 
 - `PORTAL_JWT_SECRET`
 - `PORTAL_ADMIN_USERNAME`
@@ -82,9 +82,9 @@ cp customer_portal_api/.env.example customer_portal_api/.env
 - `PORTAL_START_SOLVER`
 - `ACCOUNT_MANAGER_DATABASE_URL`
 
-### 3. 启动服务
+### 3. Start the service
 
-在仓库根目录执行：
+From the repository root:
 
 ```bash
 source .venv/bin/activate
@@ -92,33 +92,33 @@ export $(grep -v '^#' customer_portal_api/.env | xargs)
 python -m uvicorn customer_portal_api.main:app --host 0.0.0.0 --port 8100 --reload
 ```
 
-接口文档：
+API documentation:
 
 - Swagger UI: `http://127.0.0.1:8100/docs`
 - OpenAPI JSON: `http://127.0.0.1:8100/openapi.json`
 
-默认管理员账号：
+Default admin credentials:
 
-- 用户名：`admin`
-- 密码：`admin123456`
+- Username: `admin`
+- Password: `admin123456`
 
-首次启动会自动写入管理员账号到数据库。
+The admin account is automatically created on first startup.
 
-## Docker 部署
+## Docker Deployment
 
-在仓库根目录执行：
+From the repository root:
 
 ```bash
 docker compose -f customer_portal_api/docker-compose.yml up --build
 ```
 
-服务默认监听：
+The service listens on:
 
 - `http://127.0.0.1:8100`
 
-## 设计说明
+## Design Notes
 
-- 新项目复用当前仓库已有的平台注册和任务执行内核，不重新实现平台插件逻辑
-- 新项目自己的用户、刷新 token、平台授权、订单、订阅、任务归属表会和现有业务表共用同一个 SQLite 数据库
-- 用户端注册接口会创建真实注册任务，并通过任务归属表限制用户只能看到自己的任务
-- 支付链路已包含商品种子、下单、提交支付、支付回调、订阅开通和平台注册权限开通
+- The project reuses the existing platform registration and task execution core — no reimplementation of platform plugin logic
+- Its own user tables, token refresh, platform authorization, orders, subscriptions, and task ownership tables share the same SQLite database with existing business tables
+- User registration endpoints create real registration tasks, with task ownership tables restricting users to see only their own tasks
+- The payment pipeline includes product seeding, order creation, payment submission, payment callbacks, subscription activation, and platform registration permission activation

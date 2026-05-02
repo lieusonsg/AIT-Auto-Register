@@ -1,4 +1,4 @@
-"""账号生命周期管理 — 定时检测、自动续期、过期预警。"""
+"""Account lifecycle management - periodic checks, auto-renewal, expiry warnings."""
 from __future__ import annotations
 
 import logging
@@ -87,13 +87,13 @@ def check_accounts_validity(
                 results["valid"] += 1
             else:
                 results["invalid"] += 1
-                log(f"  {acc.email} ({acc.platform}): 失效")
+                log(f"  {acc.email} ({acc.platform}): invalid")
         except Exception as exc:
             results["error"] += 1
-            log(f"  {acc.email} ({acc.platform}): 检测异常 {exc}")
+            log(f"  {acc.email} ({acc.platform}): check error {exc}")
 
-    log(f"检测完成: 有效 {results['valid']}, 失效 {results['invalid']}, "
-        f"异常 {results['error']}, 跳过 {results['skipped']}")
+    log(f"Check complete: valid {results['valid']}, invalid {results['invalid']}, "
+        f"error {results['error']}, skipped {results['skipped']}")
     return results
 
 
@@ -180,16 +180,16 @@ def refresh_expiring_tokens(
                         session.add(model)
                         session.commit()
                 results["refreshed"] += 1
-                log(f"  ✓ {acc.email}: token 刷新成功")
+                log(f"  [OK] {acc.email}: token refresh succeeded")
             else:
                 results["failed"] += 1
-                log(f"  ✗ {acc.email}: {result.error_message}")
+                log(f"  [FAIL] {acc.email}: {result.error_message}")
         except Exception as exc:
             results["failed"] += 1
-            log(f"  ✗ {acc.email}: 刷新异常 {exc}")
+            log(f"  [FAIL] {acc.email}: refresh error {exc}")
 
-    log(f"刷新完成: 成功 {results['refreshed']}, 失败 {results['failed']}, "
-        f"跳过 {results['skipped']}")
+    log(f"Refresh complete: succeeded {results['refreshed']}, failed {results['failed']}, "
+        f"skipped {results['skipped']}")
     return results
 
 
@@ -255,8 +255,8 @@ def flag_expiring_trials(
         else:
             results["skipped"] += 1
 
-    log(f"过期预警: 已过期 {results['expired']}, 即将过期 {results['warned']}, "
-        f"跳过 {results['skipped']}")
+    log(f"Expiry warning: expired {results['expired']}, expiring soon {results['warned']}, "
+        f"skipped {results['skipped']}")
     return results
 
 
@@ -271,11 +271,11 @@ def refresh_and_sync_cpa(
     log_fn=None,
 ) -> dict[str, int]:
     """
-    刷新 ChatGPT 账号 token，检查存活状态，重新上传到 CPA。
-    - 用 session_token 刷新 access_token
-    - 用 /backend-api/me 检查存活
-    - 存活账号重新生成 CPA JSON 并上传
-    - 封禁账号标记为 disabled
+    Refresh ChatGPT account tokens, check liveness, re-upload to CPA.
+    - Use session_token to refresh access_token
+    - Use /backend-api/me to check liveness
+    - Alive accounts re-generate CPA JSON and upload
+    - Banned accounts marked as disabled
     """
     log = log_fn or logger.info
     results = {"refreshed": 0, "uploaded": 0, "dead": 0, "skipped": 0, "error": 0}
@@ -297,7 +297,7 @@ def refresh_and_sync_cpa(
         except Exception:
             return {}
 
-    # 读取 CPA 配置
+    # Read CPA configuration
     try:
         from core.config_store import config_store
         cpa_api_url = config_store.get("cpa_api_url", "")
@@ -305,7 +305,7 @@ def refresh_and_sync_cpa(
     except Exception:
         cpa_api_url, cpa_api_key = "", ""
 
-    # 获取所有活跃 chatgpt 账号
+    # Get all active chatgpt accounts
     with Session(engine) as session:
         q = select(AccountModel).where(AccountModel.platform == platform)
         q = q.order_by(AccountModel.created_at.desc()).limit(limit)
@@ -331,7 +331,7 @@ def refresh_and_sync_cpa(
             continue
 
         try:
-            # 1. 用 session_token 刷新 access_token
+            # 1. Use session_token to refresh access_token
             proxy = credentials.get("proxy", None)
             s = cffi_requests.Session(impersonate="chrome120", proxy=proxy)
             s.cookies.set("__Secure-next-auth.session-token", session_token,
@@ -340,25 +340,25 @@ def refresh_and_sync_cpa(
                          headers={"accept": "application/json"}, timeout=30)
 
             if resp.status_code != 200:
-                log(f"  ✗ {acc.email}: session 刷新失败 HTTP {resp.status_code}")
+                log(f"  [FAIL] {acc.email}: session refresh failed HTTP {resp.status_code}")
                 results["error"] += 1
                 continue
 
             data = resp.json()
             access_token = data.get("accessToken", "")
             if not access_token:
-                log(f"  ✗ {acc.email}: 无 accessToken")
+                log(f"  [FAIL] {acc.email}: no accessToken")
                 results["error"] += 1
                 continue
 
             results["refreshed"] += 1
 
-            # 更新 credential
+            # Update credential
             new_session = s.cookies.get("__Secure-next-auth.session-token") or session_token
             credential_updates = {"access_token": access_token}
             if new_session != session_token:
                 credential_updates["session_token"] = new_session
-            # id_token = access_token (NextAuth 没有独立 id_token)
+            # id_token = access_token (NextAuth has no separate id_token)
             credential_updates["id_token"] = access_token
 
             with Session(engine) as sess:
@@ -373,7 +373,7 @@ def refresh_and_sync_cpa(
                     sess.add(model)
                     sess.commit()
 
-            # 2. 检查存活
+            # 2. Check liveness
             check_resp = cffi_requests.get(
                 "https://chatgpt.com/backend-api/me",
                 headers={"authorization": f"Bearer {access_token}", "accept": "application/json"},
@@ -386,7 +386,7 @@ def refresh_and_sync_cpa(
                     err_detail = str(check_resp.json().get("detail", ""))[:80]
                 except Exception:
                     err_detail = check_resp.text[:80]
-                log(f"  ✗ {acc.email}: 已封禁 ({check_resp.status_code}: {err_detail})")
+                log(f"  [FAIL] {acc.email}: banned ({check_resp.status_code}: {err_detail})")
                 results["dead"] += 1
                 with Session(engine) as sess:
                     model = sess.get(AccountModel, acc.id)
@@ -400,7 +400,7 @@ def refresh_and_sync_cpa(
                         sess.commit()
                 continue
 
-            # 3. 上传到 CPA
+            # 3. Upload to CPA
             if cpa_api_url and cpa_api_key:
                 from datetime import timedelta
                 tz8 = timezone(timedelta(hours=8))
@@ -434,20 +434,20 @@ def refresh_and_sync_cpa(
                 )
                 if upload_resp.status_code in (200, 201, 207):
                     results["uploaded"] += 1
-                    log(f"  ✓ {acc.email}: 刷新+上传成功")
+                    log(f"  [OK] {acc.email}: refresh+upload succeeded")
                 else:
-                    log(f"  ✗ {acc.email}: 上传失败 HTTP {upload_resp.status_code}")
+                    log(f"  [FAIL] {acc.email}: upload failed HTTP {upload_resp.status_code}")
             else:
-                log(f"  ✓ {acc.email}: 刷新成功 (CPA 未配置)")
+                log(f"  [OK] {acc.email}: refresh succeeded (CPA not configured)")
 
             time.sleep(0.5)
 
         except Exception as exc:
             results["error"] += 1
-            log(f"  ✗ {acc.email}: 异常 {exc}")
+            log(f"  [FAIL] {acc.email}: error {exc}")
 
-    log(f"[CPA Sync] 刷新 {results['refreshed']}, 上传 {results['uploaded']}, "
-        f"封禁 {results['dead']}, 跳过 {results['skipped']}, 错误 {results['error']}")
+    log(f"[CPA Sync] refreshed {results['refreshed']}, uploaded {results['uploaded']}, "
+        f"banned {results['dead']}, skipped {results['skipped']}, error {results['error']}")
     return results
 
 
@@ -482,7 +482,7 @@ class LifecycleManager:
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True, name="lifecycle-manager")
         self._thread.start()
-        print("[LifecycleManager] 已启动")
+        print("[LifecycleManager] Started")
 
     def stop(self):
         self._running = False
@@ -498,24 +498,24 @@ class LifecycleManager:
 
                 # Validity check
                 if now - self._last_check >= self.check_interval:
-                    print("[LifecycleManager] 开始账号有效性检测...")
+                    print("[LifecycleManager] Starting account validity check...")
                     check_accounts_validity()
                     self._last_check = now
 
                 # Token refresh
                 if now - self._last_refresh >= self.refresh_interval:
-                    print("[LifecycleManager] 开始 token 自动续期...")
+                    print("[LifecycleManager] Starting token auto-renewal...")
                     refresh_expiring_tokens()
                     self._last_refresh = now
 
-                # CPA sync (刷新 token + 存活检查 + 上传)
+                # CPA sync (refresh token + liveness check + upload)
                 if now - self._last_cpa_sync >= self.cpa_sync_interval:
-                    print("[LifecycleManager] 开始 CPA 同步 (刷新+检查+上传)...")
+                    print("[LifecycleManager] Starting CPA sync (refresh+check+upload)...")
                     refresh_and_sync_cpa()
                     self._last_cpa_sync = now
 
             except Exception as exc:
-                print(f"[LifecycleManager] 错误: {exc}")
+                print(f"[LifecycleManager] Error: {exc}")
 
             # Sleep in small increments so stop() is responsive
             for _ in range(60):

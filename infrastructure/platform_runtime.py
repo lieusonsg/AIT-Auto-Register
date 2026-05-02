@@ -79,7 +79,7 @@ def _build_account_overview(platform: str, data: dict[str, Any]) -> dict[str, An
     }
     if "valid" in data:
         overview["valid"] = bool(data.get("valid"))
-        overview["chips"].append("有效" if data.get("valid") else "失效")
+        overview["chips"].append("valid" if data.get("valid") else "invalid")
 
     remote_email = ""
     if isinstance(data.get("remote_user"), dict):
@@ -110,13 +110,13 @@ def _build_account_overview(platform: str, data: dict[str, Any]) -> dict[str, An
 
     if "trial_eligible" in data:
         overview["trial_eligible"] = data.get("trial_eligible")
-        overview["chips"].append("可试用" if data.get("trial_eligible") else "不可试用")
+        overview["chips"].append("trial eligible" if data.get("trial_eligible") else "not trial eligible")
     if data.get("trial_length_days"):
         overview["trial_length_days"] = data.get("trial_length_days")
-        overview["chips"].append(f"{data['trial_length_days']}天试用")
+        overview["chips"].append(f"{data['trial_length_days']}d trial")
     if "has_valid_payment_method" in data:
         overview["has_valid_payment_method"] = data.get("has_valid_payment_method")
-        overview["chips"].append("已绑卡" if data.get("has_valid_payment_method") else "未绑卡")
+        overview["chips"].append("card bound" if data.get("has_valid_payment_method") else "no card")
 
     for key in (
         "remaining_credits",
@@ -141,7 +141,7 @@ def _build_account_overview(platform: str, data: dict[str, Any]) -> dict[str, An
             limit = item.get("usage_limit")
             chip = f"{label}"
             if remaining not in (None, ""):
-                chip += f" 剩{remaining}"
+                chip += f" rem{remaining}"
             if limit not in (None, ""):
                 chip += f" / {limit}"
             overview["chips"].append(chip)
@@ -160,9 +160,9 @@ def _build_account_overview(platform: str, data: dict[str, Any]) -> dict[str, An
                 "remaining_requests": info.get("remaining_requests"),
                 "remaining_tokens": info.get("remaining_tokens"),
             })
-            chip = f"{model_name} {info.get('num_requests', 0)}次"
+            chip = f"{model_name} {info.get('num_requests', 0)}req"
             if info.get("remaining_requests") is not None:
-                chip += f" / 剩{info['remaining_requests']}"
+                chip += f" / rem{info['remaining_requests']}"
             overview["chips"].append(chip)
         if usage_models:
             overview["usage_models"] = usage_models
@@ -172,7 +172,7 @@ def _build_account_overview(platform: str, data: dict[str, Any]) -> dict[str, An
             overview["next_reset_at"] = usage_summary.get("next_reset_at")
         if usage_summary.get("days_until_reset") is not None:
             overview["days_until_reset"] = usage_summary.get("days_until_reset")
-            overview["chips"].append(f"重置 {usage_summary.get('days_until_reset')} 天")
+            overview["chips"].append(f"reset in {usage_summary.get('days_until_reset')}d")
         breakdowns = []
         for item in usage_summary.get("breakdowns") or []:
             if not isinstance(item, dict):
@@ -197,7 +197,7 @@ def _build_account_overview(platform: str, data: dict[str, Any]) -> dict[str, An
     if isinstance(data.get("local_app_account"), dict):
         overview["local_matches_target"] = bool(data["local_app_account"].get("matches_target"))
         if data["local_app_account"].get("matches_target"):
-            overview["chips"].append("当前")
+            overview["chips"].append("current")
 
     if isinstance(data.get("desktop_app_state"), dict):
         desktop_state = data["desktop_app_state"]
@@ -280,7 +280,7 @@ class PlatformRuntime:
         with Session(engine) as session:
             model = session.get(AccountModel, command.account_id)
             if not model or model.platform != command.platform:
-                return ActionExecutionResult(ok=False, error="账号不存在")
+                return ActionExecutionResult(ok=False, error="Account not found")
 
             platform_cls = get(command.platform)
             instance = platform_cls(config=RegisterConfig())

@@ -1,4 +1,4 @@
-"""Tavily 注册协议核心实现 (Auth0 流程)"""
+"""Tavily registration protocol core implementation (Auth0 flow)"""
 import re, json, secrets, hashlib, base64, urllib.parse
 from typing import Optional, Callable
 
@@ -16,7 +16,7 @@ class TavilyRegister:
         self.log = log_fn
 
     def step1_authorize(self) -> str:
-        """GET /authorize → 返回 state"""
+        """GET /authorize -> return state"""
         nonce = secrets.token_urlsafe(32)
         code_verifier = secrets.token_urlsafe(43)
         code_challenge = base64.urlsafe_b64encode(
@@ -37,13 +37,13 @@ class TavilyRegister:
         return urllib.parse.unquote(m.group(1)) if m else state_val
 
     def step2_solve_captcha(self) -> str:
-        self.log("获取 Turnstile token...")
+        self.log("Getting Turnstile token...")
         token = self.captcha.solve_turnstile(AUTH0_BASE, TURNSTILE_SITEKEY)
         self.log("Turnstile OK")
         return token
 
     def step3_submit_email(self, email: str, state: str, captcha_token: str) -> str:
-        self.log(f"提交邮箱: {email}")
+        self.log(f"Submitting email: {email}")
         r = self.ex.post(
             f"{AUTH0_BASE}/u/signup/identifier",
             params={"state": state},
@@ -54,7 +54,7 @@ class TavilyRegister:
         return urllib.parse.unquote(m.group(1)) if m else state
 
     def step4_submit_otp(self, otp: str, challenge_state: str) -> str:
-        self.log("提交验证码...")
+        self.log("Submitting verification code...")
         r = self.ex.post(
             f"{AUTH0_BASE}/u/email-identifier/challenge",
             params={"state": challenge_state},
@@ -65,7 +65,7 @@ class TavilyRegister:
         return urllib.parse.unquote(m.group(1)) if m else challenge_state
 
     def step5_submit_password(self, email: str, password: str, pw_state: str) -> str:
-        self.log("设置密码...")
+        self.log("Setting password...")
         r = self.ex.post(
             f"{AUTH0_BASE}/u/signup/password",
             params={"state": pw_state},
@@ -78,7 +78,7 @@ class TavilyRegister:
         return urllib.parse.unquote(m.group(1)) if m else pw_state
 
     def step6_resume_and_get_key(self, resume_state: str) -> str:
-        self.log("完成授权流程...")
+        self.log("Completing authorization flow...")
         self.ex.get(f"{AUTH0_BASE}/authorize/resume", params={"state": resume_state})
         r = self.ex.get(f"{APP_BASE}/api/keys", headers={"accept": "application/json"})
         try:

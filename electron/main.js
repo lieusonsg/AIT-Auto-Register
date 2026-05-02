@@ -13,21 +13,21 @@ let splashWindow = null
 
 function getBackendPath() {
   if (isDev) {
-    return null // 开发模式：手动启动 uvicorn
+    return null // Dev mode: start uvicorn manually
   }
-  // 生产模式：PyInstaller 打包的可执行文件放在 resources/backend/
+  // Production mode: PyInstaller executable bundled in resources/backend/
   const ext = process.platform === 'win32' ? '.exe' : ''
   return path.join(process.resourcesPath, 'backend', 'backend', `backend${ext}`)
 }
 
 function startBackend() {
   if (isDev) {
-    console.log('[dev] 请手动启动后端: cd .. && uvicorn main:app --port 8000')
+    console.log('[dev] Please start backend manually: cd .. && uvicorn main:app --port 8000')
     return
   }
 
   const backendPath = getBackendPath()
-  console.log('[backend] 启动:', backendPath)
+  console.log('[backend] Starting:', backendPath)
 
   backendProcess = spawn(backendPath, [], {
     cwd: path.join(process.resourcesPath, 'backend', 'backend'),
@@ -39,7 +39,7 @@ function startBackend() {
   backendProcess.stderr.on('data', (d) => console.error('[backend]', d.toString().trim()))
 
   backendProcess.on('exit', (code) => {
-    console.warn('[backend] 进程退出，code:', code)
+    console.warn('[backend] Process exited, code:', code)
   })
 }
 
@@ -58,7 +58,7 @@ function waitForBackend(retries = 180, onProgress = null) {
     const attempt = (n) => {
       // If backend process already exited, don't keep retrying
       if (backendExited) {
-        reject(new Error('后端进程已退出，请检查日志'))
+        reject(new Error('Backend process exited unexpectedly, please check logs'))
         return
       }
 
@@ -69,10 +69,10 @@ function waitForBackend(retries = 180, onProgress = null) {
       http.get(`http://localhost:${PORT}/api/health`, (res) => {
         if (res.statusCode < 500) resolve()
         else if (n > 0) setTimeout(() => attempt(n - 1), 1000)
-        else reject(new Error('后端启动超时（180秒），请检查防火墙或端口占用'))
+        else reject(new Error('Backend startup timed out (180s), please check firewall or port usage'))
       }).on('error', () => {
         if (n > 0) setTimeout(() => attempt(n - 1), 1000)
-        else reject(new Error('后端启动超时（180秒），请检查防火墙或端口占用'))
+        else reject(new Error('Backend startup timed out (180s), please check firewall or port usage'))
       })
     }
     attempt(retries)
@@ -100,8 +100,8 @@ function createSplash() {
       .bar-inner { height:100%; background:linear-gradient(90deg,#7fb2ff,#8de3ff); border-radius:2px; transition:width 0.3s; }
     </style></head>
     <body>
-      <h1>Account Manager</h1>
-      <p id="msg">正在启动后端服务...</p>
+      <h1>AIT Auto Register</h1>
+      <p id="msg">Starting backend service...</p>
       <div class="bar"><div class="bar-inner" id="progress" style="width:0%"></div></div>
     </body>
     </html>`
@@ -114,7 +114,7 @@ function updateSplashProgress(current, total) {
   const pct = Math.min(Math.round((current / total) * 100), 99)
   splashWindow.webContents.executeJavaScript(
     `document.getElementById('progress').style.width='${pct}%';` +
-    `document.getElementById('msg').textContent='正在启动后端服务... (${current}s)';`
+    `document.getElementById('msg').textContent='Starting backend service... (${current}s)';`
   ).catch(() => {})
 }
 
@@ -129,7 +129,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    title: 'Account Manager',
+    title: 'AIT Auto Register',
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -143,7 +143,7 @@ function createWindow() {
   })
   mainWindow.on('closed', () => { mainWindow = null })
 
-  // 外部链接在系统浏览器中打开
+  // Open external links in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       shell.openExternal(url)
@@ -161,14 +161,14 @@ app.whenReady().then(async () => {
     await waitForBackend(180, updateSplashProgress)
   } catch (err) {
     closeSplash()
-    dialog.showErrorBox('启动失败', err.message)
+    dialog.showErrorBox('Startup Failed', err.message)
     app.quit()
     return
   }
 
   createWindow()
 
-  // ── 自动更新（仅 Windows，macOS 未签名不支持） ──
+  // ── Auto-update (Windows only, macOS unsigned not supported) ──
   if (process.platform === 'win32' && !isDev) {
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = true
@@ -176,9 +176,9 @@ app.whenReady().then(async () => {
     autoUpdater.on('update-available', (info) => {
       dialog.showMessageBox(mainWindow, {
         type: 'info',
-        title: '发现新版本',
-        message: `新版本 v${info.version} 可用，是否下载？`,
-        buttons: ['下载更新', '稍后'],
+        title: 'Update Available',
+        message: `New version v${info.version} available, download now?`,
+        buttons: ['Download Update', 'Later'],
         defaultId: 0,
       }).then(({ response }) => {
         if (response === 0) {
@@ -190,9 +190,9 @@ app.whenReady().then(async () => {
     autoUpdater.on('update-downloaded', () => {
       dialog.showMessageBox(mainWindow, {
         type: 'info',
-        title: '更新就绪',
-        message: '新版本已下载完成，重启应用即可安装。',
-        buttons: ['立即重启', '稍后'],
+        title: 'Update Ready',
+        message: 'New version downloaded. Restart the app to install.',
+        buttons: ['Restart Now', 'Later'],
         defaultId: 0,
       }).then(({ response }) => {
         if (response === 0) {
@@ -202,10 +202,10 @@ app.whenReady().then(async () => {
     })
 
     autoUpdater.on('error', (err) => {
-      console.error('[updater] 检查更新失败:', err.message)
+      console.error('[updater] Update check failed:', err.message)
     })
 
-    // 启动后 10 秒检查更新
+    // Check for updates 10 seconds after startup
     setTimeout(() => autoUpdater.checkForUpdates(), 10000)
   }
 

@@ -1,8 +1,8 @@
-# 参与贡献
+# Contributing
 
-感谢你对 Any Auto Register 的关注！欢迎提交 Issue 和 Pull Request。
+Thank you for your interest in AIT Auto Register! Issues and Pull Requests are welcome.
 
-## 开发环境
+## Development Environment
 
 ```bash
 python3 -m venv .venv
@@ -10,40 +10,40 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 运行测试
+## Running Tests
 
 ```bash
 pytest
 ```
 
-运行单个测试文件：
+Run a single test file:
 
 ```bash
 pytest tests/test_api_health.py -v
 ```
 
-## 提交规范
+## Commit Convention
 
-使用 [Conventional Commits](https://www.conventionalcommits.org/)：
+Use [Conventional Commits](https://www.conventionalcommits.org/):
 
-- `feat:` 新功能
-- `fix:` 修复
-- `docs:` 文档
-- `refactor:` 重构
-- `test:` 测试
-- `chore:` 构建/工具
+- `feat:` new feature
+- `fix:` bug fix
+- `docs:` documentation
+- `refactor:` refactoring
+- `test:` tests
+- `chore:` build/tooling
 
-## 添加新平台
+## Adding a New Platform
 
-1. 在 `platforms/` 下新建目录
-2. 实现 `plugin.py`（继承 `BasePlatform`，用 `@register` 装饰器注册）
-3. 实现 `protocol_mailbox.py`（协议模式注册逻辑）
-4. 可选：实现 `browser_register.py` 和 `browser_oauth.py`
-5. 在 `resources/platform_capabilities.json` 中添加平台能力声明
-6. 添加对应的测试
+1. Create a directory under `platforms/`
+2. Implement `plugin.py` (inherit `BasePlatform`, register with `@register` decorator)
+3. Implement `protocol_mailbox.py` (protocol mode registration logic)
+4. Optional: implement `browser_register.py` and `browser_oauth.py`
+5. Add platform capability declaration in `resources/platform_capabilities.json`
+6. Add corresponding tests
 
-## 代码风格
+## Code Style
 
-- Python 代码遵循 PEP 8
-- 类型注解尽量完整
-- 中文注释和日志
+- Follow PEP 8 for Python code
+- Use type annotations where possible
+- Write comments and logs in English

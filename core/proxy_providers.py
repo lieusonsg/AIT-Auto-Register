@@ -1,10 +1,10 @@
-"""动态代理 IP 提供者 — 具体实现已迁移到 providers/proxy/
+"""Dynamic proxy IP providers — concrete implementations moved to providers/proxy/
 
-支持两种模式:
-  1. 静态代理: 从数据库读取固定代理列表（现有逻辑）
-  2. 动态代理: 从第三方 API 实时获取代理 IP
+Supports two modes:
+  1. Static proxy: reads fixed proxy list from database (existing logic)
+  2. Dynamic proxy: fetches proxy IPs from third-party API in real time
 
-动态代理 provider 通过 provider_settings 配置；如果未配置则自动回退到静态代理池。
+Dynamic proxy providers are configured via provider_settings; if not configured, falls back to static proxy pool.
 """
 from __future__ import annotations
 
@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 
 
 class BaseProxyProvider(ABC):
-    """动态代理提供者基类。"""
+    """Dynamic proxy provider base class."""
 
     @abstractmethod
     def get_proxy(self) -> Optional[str]:
-        """获取一个代理 URL，格式: http://host:port 或 http://user:pass@host:port。
-        返回 None 表示无可用代理。"""
+        """Get a proxy URL, format: http://host:port or http://user:pass@host:port.
+        Returns None if no proxy is available."""
         ...
 
 
@@ -51,11 +51,11 @@ def __getattr__(name: str):
 # ---------------------------------------------------------------------------
 
 def create_proxy_provider(provider_key: str, config: dict) -> BaseProxyProvider:
-    """根据 provider_key 和配置创建代理提供者。"""
+    """Create a proxy provider based on provider_key and configuration."""
     if provider_key == "api_extract":
         api_url = config.get("proxy_api_url", "")
         if not api_url:
-            raise RuntimeError("动态代理未配置 API URL")
+            raise RuntimeError("Dynamic proxy API URL not configured")
         provider_cls = __getattr__("ApiExtractProvider")
         return provider_cls(
             api_url=api_url,
@@ -67,17 +67,17 @@ def create_proxy_provider(provider_key: str, config: dict) -> BaseProxyProvider:
     if provider_key == "rotating_gateway":
         gateway = config.get("proxy_gateway_url", "")
         if not gateway:
-            raise RuntimeError("旋转代理未配置网关地址")
+            raise RuntimeError("Rotating proxy gateway address not configured")
         provider_cls = __getattr__("RotatingProxyProvider")
         return provider_cls(gateway_url=gateway)
 
-    raise RuntimeError(f"未知的代理 provider: {provider_key}")
+    raise RuntimeError(f"Unknown proxy provider: {provider_key}")
 
 
 def get_dynamic_proxy(extra: dict | None = None) -> Optional[str]:
-    """尝试从配置的动态代理 provider 获取代理。
+    """Try to get a proxy from the configured dynamic proxy provider.
 
-    如果未配置动态代理，返回 None（回退到静态代理池）。
+    Returns None if no dynamic proxy is configured (falls back to static proxy pool).
     """
     try:
         from infrastructure.provider_settings_repository import ProviderSettingsRepository
@@ -95,7 +95,7 @@ def get_dynamic_proxy(extra: dict | None = None) -> Optional[str]:
                 if proxy:
                     return proxy
             except Exception as exc:
-                logger.debug(f"[ProxyProvider] {setting.provider_key} 获取失败: {exc}")
+                logger.debug(f"[ProxyProvider] {setting.provider_key} fetch failed: {exc}")
                 continue
     except Exception:
         pass

@@ -1,4 +1,4 @@
-"""邮箱池基类 - 抽象临时邮箱/收件服务"""
+"""Mailbox pool base class - abstracts temporary email/inbox services"""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import html
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 from core.tls import insecure_request, mark_session_insecure, suppress_insecure_request_warning
 
-# ── 邮箱服务默认 API 地址（统一维护，需要时在此修改） ──
+# ── Default API URLs for mailbox services (maintained centrally, modify here as needed) ──
 DEFAULT_LAOUDO_API_URL = "https://laoudo.com/api/email"
 DEFAULT_AITRE_API_URL = "https://mail.aitre.cc/api/tempmail"
 DEFAULT_TEMPMAIL_LOL_API_URL = "https://api.tempmail.lol/v2"
@@ -21,35 +21,35 @@ DEFAULT_TEMPMAIL_WEB_BASE_URL = "https://web2.temp-mail.org"
 class MailboxAccount:
     email: str
     account_id: str = ""
-    extra: dict = None  # 平台额外信息
+    extra: dict = None  # platform extra info
 
 
 class BaseMailbox(ABC):
     @abstractmethod
     def get_email(self) -> MailboxAccount:
-        """获取一个可用邮箱"""
+        """Get an available email address"""
         ...
 
     @abstractmethod
     def wait_for_code(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None,
                       code_pattern: str = None) -> str:
-        """等待并返回验证码，code_pattern 为自定义正则（默认匹配6位数字）"""
+        """Wait for and return verification code; code_pattern is custom regex (default matches 6 digits)"""
         ...
 
     @abstractmethod
     def get_current_ids(self, account: MailboxAccount) -> set:
-        """返回当前邮件 ID 集合（用于过滤旧邮件）"""
+        """Return current email ID set (used to filter old emails)"""
         ...
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
-        """等待并返回验证链接。默认由具体 provider 自行实现。"""
-        raise NotImplementedError(f"{self.__class__.__name__} 暂不支持 wait_for_link()")
+        """Wait for and return verification link. Default: implemented by individual providers."""
+        raise NotImplementedError(f"{self.__class__.__name__} does not support wait_for_link()")
 
 
 class FallbackMailbox(BaseMailbox):
-    """按顺序尝试多个 provider，创建邮箱成功后固定使用同一 provider 收件。"""
+    """Try multiple providers in order; once an email is created, stick with the same provider for receiving."""
 
     def __init__(self, providers: list[tuple[str, 'BaseMailbox']]):
         self.providers = [(str(key or "").strip(), mailbox) for key, mailbox in providers if str(key or "").strip() and mailbox]
@@ -74,24 +74,24 @@ class FallbackMailbox(BaseMailbox):
         mailbox = self._accounts.get(str(account.email or "").strip())
         if mailbox is not None:
             return mailbox
-        raise RuntimeError(f"未找到邮箱 provider 上下文: {account.email}")
+        raise RuntimeError(f"Mailbox provider context not found: {account.email}")
 
     def get_email(self) -> MailboxAccount:
         errors: list[str] = []
         for provider_key, mailbox in self.providers:
             try:
-                print(f"[Mailbox] 尝试 provider: {provider_key}")
+                print(f"[Mailbox] Trying provider: {provider_key}")
                 account = mailbox.get_email()
                 self._accounts[str(account.email or "").strip()] = mailbox
                 self._inject_provider_metadata(account, provider_key)
-                print(f"[Mailbox] 使用 provider 成功: {provider_key} -> {account.email}")
+                print(f"[Mailbox] Provider succeeded: {provider_key} -> {account.email}")
                 return account
             except Exception as exc:
                 message = str(exc).strip() or exc.__class__.__name__
                 errors.append(f"{provider_key}: {message}")
-                print(f"[Mailbox] provider 失败: {provider_key} -> {message}")
+                print(f"[Mailbox] Provider failed: {provider_key} -> {message}")
                 continue
-        raise RuntimeError("所有邮箱 provider 均创建失败: " + " | ".join(errors))
+        raise RuntimeError("All mailbox providers failed: " + " | ".join(errors))
 
     def get_current_ids(self, account: MailboxAccount) -> set:
         return self._resolve_mailbox(account).get_current_ids(account)
@@ -155,7 +155,7 @@ def _normalize_api_base_url(value: str | None, *, default: str, label: str) -> s
         raw = f"https://{raw.lstrip('/')}"
     parsed = urlparse(raw)
     if not parsed.scheme or not parsed.netloc:
-        raise ValueError(f"{label} 无效: {value!r}")
+        raise ValueError(f"{label} invalid: {value!r}")
     return raw.rstrip("/")
 
 
@@ -272,7 +272,7 @@ MAILBOX_FACTORY_REGISTRY = {
 
 
 def create_mailbox(provider: str, extra: dict = None, proxy: str = None) -> 'BaseMailbox':
-    """工厂方法：根据 provider 创建对应的 mailbox 实例"""
+    """Factory method: create mailbox instance based on provider"""
     from infrastructure.provider_definitions_repository import ProviderDefinitionsRepository
     from infrastructure.provider_settings_repository import ProviderSettingsRepository
 
@@ -280,10 +280,10 @@ def create_mailbox(provider: str, extra: dict = None, proxy: str = None) -> 'Bas
     settings_repo = ProviderSettingsRepository()
     provider_key = str(provider or "").strip()
     if not provider_key:
-        raise RuntimeError("未选择邮箱 provider，请先在设置页配置并启用默认邮箱 provider")
+        raise RuntimeError("No mailbox provider selected, please configure and enable a default mailbox provider in settings")
     definition = definitions_repo.get_by_key("mailbox", provider_key)
     if not definition or not definition.enabled:
-        raise RuntimeError(f"邮箱 provider 不存在或未启用: {provider_key}")
+        raise RuntimeError(f"Mailbox provider does not exist or is not enabled: {provider_key}")
     base_extra = dict(extra or {})
 
     raw_fallbacks = base_extra.get("mail_provider_fallbacks")
@@ -322,18 +322,18 @@ def create_mailbox(provider: str, extra: dict = None, proxy: str = None) -> 'Bas
                 providers.append((key, factory(resolved_extra, proxy)))
         except Exception as exc:
             if key == provider_key:
-                raise RuntimeError(f"邮箱 provider {key} 初始化失败: {exc}") from exc
-            logger.warning("邮箱 provider %s 初始化失败，已跳过: %s", key, exc)
+                raise RuntimeError(f"Mailbox provider {key} initialization failed: {exc}") from exc
+            logger.warning("Mailbox provider %s initialization failed, skipped: %s", key, exc)
 
     if not providers:
-        raise RuntimeError("没有可用的邮箱 provider 实例")
+        raise RuntimeError("No available mailbox provider instances")
     if len(providers) == 1:
         return providers[0][1]
     return FallbackMailbox(providers)
 
 
 class LaoudoMailbox(BaseMailbox):
-    """laoudo.com 邮箱服务"""
+    """laoudo.com email service"""
     def __init__(self, auth_token: str, email: str, account_id: str, api_url: str = ""):
         self.auth = auth_token
         self._email = email
@@ -423,7 +423,7 @@ class LaoudoMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(4)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -455,11 +455,11 @@ class LaoudoMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(4)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class AitreMailbox(BaseMailbox):
-    """mail.aitre.cc 临时邮箱"""
+    """mail.aitre.cc temporary email"""
     def __init__(self, email: str, api_url: str = ""):
         self._email = email
         self.api = (api_url or DEFAULT_AITRE_API_URL).rstrip("/")
@@ -506,7 +506,7 @@ class AitreMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -536,11 +536,11 @@ class AitreMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class TempMailLolMailbox(BaseMailbox):
-    """tempmail.lol 免费临时邮箱（无需注册，自动生成）"""
+    """tempmail.lol free temporary email (no registration, auto-generated)"""
 
     def __init__(self, proxy: str = None, api_url: str = ""):
         self.api = (api_url or DEFAULT_TEMPMAIL_LOL_API_URL).rstrip("/")
@@ -609,7 +609,7 @@ class TempMailLolMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -633,11 +633,11 @@ class TempMailLolMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class TempMailWebMailbox(BaseMailbox):
-    """参考项目同款 Temp-Mail Web API。"""
+    """Temp-Mail Web API (same as reference project)."""
 
     def __init__(self, base_url: str = "", proxy: str = None):
         self.base_url = _normalize_api_base_url(
@@ -691,13 +691,13 @@ class TempMailWebMailbox(BaseMailbox):
         text = str((response or {}).get("body", "") or "")
         if status != 200:
             raise RuntimeError(
-                f"Temp-Mail Web {action} 失败: HTTP {status} {text[:300]}"
+                f"Temp-Mail Web {action} failed: HTTP {status} {text[:300]}"
             )
         try:
             return json.loads(text)
         except Exception as exc:
             raise RuntimeError(
-                f"Temp-Mail Web {action} 返回非 JSON: {exc}; body={text[:300]}"
+                f"Temp-Mail Web {action} returned non-JSON: {exc}; body={text[:300]}"
             ) from exc
 
     def _request_json(self, method: str, path: str, *, auth_header: str = "") -> dict | list:
@@ -705,7 +705,7 @@ class TempMailWebMailbox(BaseMailbox):
         import time
 
         target_url = f"{self.base_url.rstrip('/')}/{path.lstrip('/')}"
-        action = "创建邮箱" if path.lstrip("/") == "mailbox" else "拉取消息"
+        action = "create mailbox" if path.lstrip("/") == "mailbox" else "fetch messages"
         max_attempts = 4 if path.lstrip("/") == "mailbox" else 2
 
         for attempt in range(1, max_attempts + 1):
@@ -751,7 +751,7 @@ class TempMailWebMailbox(BaseMailbox):
             if status != 429 or attempt >= max_attempts:
                 return self._decode_json_response(result, action)
             wait_seconds = min(20, 3 * attempt + random.uniform(0.5, 2.5))
-            print(f"[TempMailWeb] {action} 遇到 429，等待 {wait_seconds:.1f}s 后重试 ({attempt}/{max_attempts})")
+            print(f"[TempMailWeb] {action} hit 429, waiting {wait_seconds:.1f}s before retry ({attempt}/{max_attempts})")
             time.sleep(wait_seconds)
 
         return self._decode_json_response(result, action)
@@ -763,9 +763,9 @@ class TempMailWebMailbox(BaseMailbox):
         address = str(data.get("address") or data.get("mailbox") or data.get("email") or "").strip()
         token = str(data.get("token") or "").strip()
         if not address or not token:
-            raise RuntimeError(f"Temp-Mail Web 创建邮箱失败: {json.dumps(data, ensure_ascii=False)[:300]}")
+            raise RuntimeError(f"Temp-Mail Web create mailbox failed: {json.dumps(data, ensure_ascii=False)[:300]}")
         self._accounts[address] = token
-        print(f"[TempMailWeb] 生成邮箱: {address}")
+        print(f"[TempMailWeb] Generated mailbox: {address}")
         return MailboxAccount(
             email=address,
             account_id=token,
@@ -789,7 +789,7 @@ class TempMailWebMailbox(BaseMailbox):
     def _fetch_messages(self, account: MailboxAccount) -> list[dict]:
         token = str(account.account_id or self._accounts.get(account.email) or "").strip()
         if not token:
-            raise RuntimeError(f"Temp-Mail Web 缺少 token: {account.email}")
+            raise RuntimeError(f"Temp-Mail Web missing token: {account.email}")
         data = self._request_json("GET", "/messages", auth_header=f"Bearer {token}")
         if isinstance(data, dict) and isinstance(data.get("messages"), list):
             return list(data.get("messages") or [])
@@ -853,12 +853,12 @@ class TempMailWebMailbox(BaseMailbox):
                         continue
                     code = self._extract_code(item, code_pattern=code_pattern)
                     if code:
-                        print(f"[TempMailWeb] 收到验证码: {code}")
+                        print(f"[TempMailWeb] Received verification code: {code}")
                         return code
             except Exception:
                 pass
             time.sleep(5)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -884,7 +884,7 @@ class TempMailWebMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(5)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
     def __del__(self):
         executor = getattr(self, "_executor", None)
@@ -902,7 +902,7 @@ class TempMailWebMailbox(BaseMailbox):
 
 
 class DuckMailMailbox(BaseMailbox):
-    """DuckMail 自动生成邮箱（随机创建账号）"""
+    """DuckMail auto-generated email (random account creation)"""
 
     def __init__(self, api_url: str = "",
                  provider_url: str = "",
@@ -928,13 +928,13 @@ class DuckMailMailbox(BaseMailbox):
         password = "Test" + "".join(random.choices(string.digits, k=8)) + "!"
         domain = self.provider_url.replace("https://api.", "").replace("https://", "")
         address = f"{username}@{domain}"
-        # 创建账号
+        # Create account
         r = insecure_request(requests.post, f"{self.api}/api/mail?endpoint=%2Faccounts",
             json={"address": address, "password": password},
             headers=self._common_headers(), proxies=self.proxy, timeout=15)
         data = r.json()
         self._address = data.get("address", address)
-        # 登录获取 token
+        # Login to get token
         r2 = insecure_request(requests.post, f"{self.api}/api/mail?endpoint=%2Ftoken",
             json={"address": self._address, "password": password},
             headers=self._common_headers(), proxies=self.proxy, timeout=15)
@@ -1000,7 +1000,7 @@ class DuckMailMailbox(BaseMailbox):
                     mid = str(msg.get("id") or msg.get("msgid") or "")
                     if mid in seen: continue
                     seen.add(mid)
-                    # 请求邮件详情获取完整 text
+                    # Request message details for full text
                     try:
                         r2 = insecure_request(requests.get, f"{self.api}/api/mail?endpoint=%2Fmessages%2F{mid}",
                             headers={"authorization": f"Bearer {account.account_id}",
@@ -1016,7 +1016,7 @@ class DuckMailMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -1050,11 +1050,11 @@ class DuckMailMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class CFWorkerMailbox(BaseMailbox):
-    """Cloudflare Worker 自建临时邮箱服务"""
+    """Cloudflare Worker self-hosted temporary email service"""
 
     def __init__(self, api_url: str, admin_token: str = "", domain: str = "",
                  fingerprint: str = "", proxy: str = None):
@@ -1089,7 +1089,7 @@ class CFWorkerMailbox(BaseMailbox):
         email = data.get("email", data.get("address", ""))
         token = data.get("token", data.get("jwt", ""))
         self._token = token
-        print(f"[CFWorker] 生成邮箱: {email} token={token[:40] if token else 'NONE'}...")
+        print(f"[CFWorker] Generated mailbox: {email} token={token[:40] if token else 'NONE'}...")
         return MailboxAccount(
             email=email,
             account_id=token,
@@ -1140,15 +1140,15 @@ class CFWorkerMailbox(BaseMailbox):
                         continue
                     seen.add(mid)
                     raw = str(mail.get("raw", ""))
-                    # 1. 优先匹配 <span>XXXXXX</span> （Trae 邮件格式）
+                    # 1. Prefer matching <span>XXXXXX</span> (Trae email format)
                     code_m = re.search(r'<span[^>]*>\s*(\d{6})\s*</span>', raw)
                     if code_m:
                         return code_m.group(1)
-                    # 2. 跳过 MIME header，只搜 body 部分，避免匹配时间戳
+                    # 2. Skip MIME header, search only body part to avoid matching timestamps
                     body_start = raw.find('\r\n\r\n')
                     search_text = raw[body_start:] if body_start != -1 else raw
                     search_text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '', search_text)
-                    # 排除时间戳模式 m=+XXXXXX. 和 t=XXXXXXXXXX
+                    # Exclude timestamp patterns m=+XXXXXX. and t=XXXXXXXXXX
                     search_text = re.sub(r'm=\+\d+\.\d+', '', search_text)
                     search_text = re.sub(r'\bt=\d+\b', '', search_text)
                     m = re.search(code_pattern or r'(?<!#)(?<!\d)(\d{6})(?!\d)', search_text)
@@ -1157,7 +1157,7 @@ class CFWorkerMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -1179,11 +1179,11 @@ class CFWorkerMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class MoeMailMailbox(BaseMailbox):
-    """MoeMail (sall.cc) 邮箱服务 - 自动注册账号并生成临时邮箱"""
+    """MoeMail (sall.cc) email service - auto-register account and generate temporary email"""
 
     def __init__(
         self,
@@ -1239,11 +1239,11 @@ class MoeMailMailbox(BaseMailbox):
             self._apply_session_token(s, self._configured_session_token)
             self._session = s
             self._session_token = self._configured_session_token
-            print("[MoeMail] 使用已提供的 session-token")
+            print("[MoeMail] Using provided session-token")
             return self._configured_session_token
 
         if not (self._configured_username and self._configured_password):
-            raise RuntimeError("MoeMail 未配置可复用账号，请提供用户名密码或 session-token")
+            raise RuntimeError("MoeMail has no reusable account configured, please provide username/password or session-token")
 
         with suppress_insecure_request_warning():
             csrf_r = s.get(f"{self.api}/api/auth/csrf", timeout=10)
@@ -1268,10 +1268,10 @@ class MoeMailMailbox(BaseMailbox):
         token = self._extract_session_token(s)
         if token:
             self._session_token = token
-            print("[MoeMail] 使用手动注册账号登录成功")
+            print("[MoeMail] Login successful with manually registered account")
             return token
         raise RuntimeError(
-            f"MoeMail 登录失败: 已提供用户名密码，但未获取到 session-token (HTTP {login_resp.status_code})"
+            f"MoeMail login failed: username/password provided but no session-token obtained (HTTP {login_resp.status_code})"
         )
 
     def _ensure_session(self) -> str:
@@ -1285,28 +1285,28 @@ class MoeMailMailbox(BaseMailbox):
         import random, string
 
         s = self._new_session()
-        # 注册
+        # Register
         username = "".join(random.choices(string.ascii_lowercase + string.digits, k=12))
         password = "Test" + "".join(random.choices(string.digits, k=8)) + "!"
         self._username = username
         self._password = password
-        print(f"[MoeMail] 注册账号: {username} / {password}")
+        print(f"[MoeMail] Registering account: {username} / {password}")
         with suppress_insecure_request_warning():
             r_reg = s.post(f"{self.api}/api/auth/register",
                 json={"username": username, "password": password, "turnstileToken": ""},
                 timeout=15)
-        print(f"[MoeMail] 注册结果: {r_reg.status_code} {r_reg.text[:80]}")
+        print(f"[MoeMail] Registration result: {r_reg.status_code} {r_reg.text[:80]}")
         if r_reg.status_code >= 400:
             try:
                 register_error = r_reg.json().get("error") or r_reg.text
             except Exception:
                 register_error = r_reg.text
-            raise RuntimeError(f"MoeMail 注册失败: {str(register_error).strip() or f'HTTP {r_reg.status_code}'}")
-        # 获取 CSRF
+            raise RuntimeError(f"MoeMail registration failed: {str(register_error).strip() or f'HTTP {r_reg.status_code}'}")
+        # Get CSRF token
         with suppress_insecure_request_warning():
             csrf_r = s.get(f"{self.api}/api/auth/csrf", timeout=10)
         csrf = csrf_r.json().get("csrfToken", "")
-        # 登录
+        # Login
         with suppress_insecure_request_warning():
             login_resp = s.post(f"{self.api}/api/auth/callback/credentials",
                 headers={"content-type": "application/x-www-form-urlencoded"},
@@ -1322,14 +1322,14 @@ class MoeMailMailbox(BaseMailbox):
         token = self._extract_session_token(s)
         if token:
             self._session_token = token
-            print(f"[MoeMail] 登录成功")
+            print(f"[MoeMail] Login successful")
             return token
-        print(f"[MoeMail] 登录失败，cookies: {[c.name for c in s.cookies]}")
+        print(f"[MoeMail] Login failed, cookies: {[c.name for c in s.cookies]}")
         raise RuntimeError(
-            f"MoeMail 登录失败: 未获取到 session-token (HTTP {login_resp.status_code})"
+            f"MoeMail login failed: no session-token obtained (HTTP {login_resp.status_code})"
         )
 
-    # 优先用这些域名（信誉较好，不易被 AWS/Google 等拒绝）
+    # Prefer these domains (good reputation, less likely to be rejected by AWS/Google etc.)
     _PREFERRED_DOMAINS = ("sall.cc", "cnmlgb.de", "zhooo.org", "coolkid.icu")
 
     def get_email(self) -> MailboxAccount:
@@ -1338,19 +1338,19 @@ class MoeMailMailbox(BaseMailbox):
         self._ensure_session()
         import random, string
         name = "".join(random.choices(string.ascii_letters + string.digits, k=8))
-        # 获取可用域名列表，优先选信誉好的域名，避免被 AWS 等平台拒绝
+        # Get available domain list, prefer reputable domains to avoid rejection by AWS and similar platforms
         domain = "sall.cc"
         try:
             with suppress_insecure_request_warning():
                 cfg_r = self._session.get(f"{self.api}/api/config", timeout=10)
             all_domains = [d.strip() for d in cfg_r.json().get("emailDomains", "sall.cc").split(",") if d.strip()]
             if all_domains:
-                # 从可用域名中筛选优先域名，按 _PREFERRED_DOMAINS 顺序选择
+                # Filter preferred domains from available ones, select in _PREFERRED_DOMAINS order
                 preferred = [d for d in self._PREFERRED_DOMAINS if d in all_domains]
                 if preferred:
                     domain = random.choice(preferred)
                 else:
-                    # 无优先域名可用，从剩余中随机选
+                    # No preferred domains available, pick randomly from the rest
                     domain = random.choice(all_domains)
         except Exception:
             pass
@@ -1361,13 +1361,13 @@ class MoeMailMailbox(BaseMailbox):
         data = r.json()
         self._email = data.get("email", data.get("address", ""))
         email_id = data.get("id", "")
-        print(f"[MoeMail] 生成邮箱: {self._email} id={email_id} domain={domain} status={r.status_code}")
+        print(f"[MoeMail] Generated mailbox: {self._email} id={email_id} domain={domain} status={r.status_code}")
         if not email_id:
-            print(f"[MoeMail] 生成失败: {data}")
+            print(f"[MoeMail] Generation failed: {data}")
             generate_error = data.get("error") or data.get("message") or r.text
-            raise RuntimeError(f"MoeMail 生成邮箱失败: {str(generate_error).strip() or f'HTTP {r.status_code}'}")
+            raise RuntimeError(f"MoeMail mailbox generation failed: {str(generate_error).strip() or f'HTTP {r.status_code}'}")
         if not self._email:
-            raise RuntimeError("MoeMail 生成邮箱失败: 返回结果缺少 email")
+            raise RuntimeError("MoeMail mailbox generation failed: response missing email")
         self._email_count = getattr(self, '_email_count', 0) + 1
         return MailboxAccount(
             email=self._email,
@@ -1438,7 +1438,7 @@ class MoeMailMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -1469,14 +1469,14 @@ class MoeMailMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class FreemailMailbox(BaseMailbox):
     """
-    Freemail 自建邮箱服务（基于 Cloudflare Worker）
-    项目: https://github.com/idinging/freemail
-    支持管理员令牌或账号密码两种认证方式
+    Freemail self-hosted email service (based on Cloudflare Worker)
+    Project: https://github.com/idinging/freemail
+    Supports admin token or username/password authentication
     """
 
     def __init__(self, api_url: str, admin_token: str = "",
@@ -1511,7 +1511,7 @@ class FreemailMailbox(BaseMailbox):
         data = r.json()
         email = data.get("email", "")
         self._email = email
-        print(f"[Freemail] 生成邮箱: {email}")
+        print(f"[Freemail] Generated mailbox: {email}")
         provider_account = {
             "provider_type": "mailbox",
             "provider_name": "freemail",
@@ -1570,18 +1570,18 @@ class FreemailMailbox(BaseMailbox):
                     mid = str(msg.get("id", ""))
                     if not mid or mid in seen: continue
                     seen.add(mid)
-                    # 直接用 verification_code 字段
+                    # Use verification_code field directly
                     code = str(msg.get("verification_code") or "")
                     if code and code != "None":
                         return code
-                    # 兜底：从 preview 提取
+                    # Fallback: extract from preview
                     text = str(msg.get("preview", "")) + " " + str(msg.get("subject", ""))
                     m = re.search(r"(?<!\d)(\d{6})(?!\d)", text)
                     if m: return m.group(1)
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -1607,11 +1607,11 @@ class FreemailMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class TestmailMailbox(BaseMailbox):
-    """testmail.app 邮箱服务，地址格式为 {namespace}.{tag}@inbox.testmail.app。"""
+    """testmail.app email service, address format: {namespace}.{tag}@inbox.testmail.app."""
 
     def __init__(
         self,
@@ -1629,9 +1629,9 @@ class TestmailMailbox(BaseMailbox):
 
     def _assert_ready(self) -> None:
         if not self.api_key:
-            raise RuntimeError("Testmail 未配置 API Key")
+            raise RuntimeError("Testmail API Key not configured")
         if not self.namespace:
-            raise RuntimeError("Testmail 未配置 namespace")
+            raise RuntimeError("Testmail namespace not configured")
 
     def _build_tag(self) -> str:
         import random
@@ -1663,7 +1663,7 @@ class TestmailMailbox(BaseMailbox):
         response = requests.get(self.api, params=params, proxies=self.proxy, timeout=15)
         payload = response.json()
         if payload.get("result") == "fail":
-            raise RuntimeError(f"Testmail 查询失败: {payload.get('message') or response.text}")
+            raise RuntimeError(f"Testmail query failed: {payload.get('message') or response.text}")
         return payload.get("emails", []) or []
 
     @staticmethod
@@ -1742,7 +1742,7 @@ class TestmailMailbox(BaseMailbox):
 
         tag = str(account.account_id or "")
         if not tag:
-            raise RuntimeError("Testmail mailbox 缺少 tag")
+            raise RuntimeError("Testmail mailbox missing tag")
         seen = set(before_ids or [])
         started = ((account.extra or {}).get("provider_resource") or {}).get("metadata", {}).get("created_at_ms")
         pattern = re.compile(code_pattern) if code_pattern else None
@@ -1765,7 +1765,7 @@ class TestmailMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification code ({timeout}s)")
 
     def wait_for_link(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None) -> str:
@@ -1773,7 +1773,7 @@ class TestmailMailbox(BaseMailbox):
 
         tag = str(account.account_id or "")
         if not tag:
-            raise RuntimeError("Testmail mailbox 缺少 tag")
+            raise RuntimeError("Testmail mailbox missing tag")
         seen = set(before_ids or [])
         started = ((account.extra or {}).get("provider_resource") or {}).get("metadata", {}).get("created_at_ms")
         start = time.time()
@@ -1791,15 +1791,15 @@ class TestmailMailbox(BaseMailbox):
             except Exception:
                 pass
             time.sleep(3)
-        raise TimeoutError(f"等待验证链接超时 ({timeout}s)")
+        raise TimeoutError(f"Timed out waiting for verification link ({timeout}s)")
 
 
 class DDGEmailMailbox(BaseMailbox):
-    """DuckDuckGo Email Protection — 生成 @duck.com 私密别名，通过 IMAP 从转发邮箱读取验证码"""
+    """DuckDuckGo Email Protection -- generates @duck.com private aliases, reads verification codes via IMAP from forwarding email"""
 
     DDG_API = "https://quack.duckduckgo.com/api/email/addresses"
 
-    # 常见邮箱 IMAP 地址自动匹配
+    # Common email IMAP address auto-matching
     _IMAP_HOSTS = {
         "163.com": "imap.163.com",
         "126.com": "imap.126.com",
@@ -1818,7 +1818,7 @@ class DDGEmailMailbox(BaseMailbox):
         self.imap_pass = imap_pass
         self.proxy = {"http": proxy, "https": proxy} if proxy else None
 
-        # 自动推断 IMAP host
+        # Auto-detect IMAP host
         if not self.imap_host and self.imap_user and "@" in self.imap_user:
             domain = self.imap_user.split("@", 1)[1].lower()
             self.imap_host = self._IMAP_HOSTS.get(domain, f"imap.{domain}")
@@ -1842,9 +1842,9 @@ class DDGEmailMailbox(BaseMailbox):
         data = r.json()
         address = data.get("address", "")
         if not address:
-            raise RuntimeError(f"DDG Email 创建别名失败: {r.text[:200]}")
+            raise RuntimeError(f"DDG Email alias creation failed: {r.text[:200]}")
         email = f"{address}@duck.com"
-        print(f"[DDG Email] 创建别名: {email}")
+        print(f"[DDG Email] Created alias: {email}")
         return MailboxAccount(
             email=email,
             account_id=address,
@@ -1869,7 +1869,7 @@ class DDGEmailMailbox(BaseMailbox):
         import time
 
         if not self.imap_user or not self.imap_pass:
-            raise RuntimeError("DDG Email 未配置 IMAP（ddg_imap_user / ddg_imap_pass），无法读取验证码")
+            raise RuntimeError("DDG Email IMAP not configured (ddg_imap_user / ddg_imap_pass), cannot read verification codes")
 
         pattern = code_pattern or r'(?<!\d)(\d{6})(?!\d)'
         start = time.time()
@@ -1880,7 +1880,7 @@ class DDGEmailMailbox(BaseMailbox):
             conn = None
             try:
                 conn = imaplib.IMAP4_SSL(self.imap_host, 993, timeout=10)
-                # 163/126 要求先发 ID 命令
+                # 163/126 requires ID command first
                 if any(h in self.imap_host for h in ("163.com", "126.com", "yeah.net")):
                     imaplib.Commands['ID'] = ('NONAUTH', 'AUTH', 'SELECTED')
                     conn._simple_command('ID', '("name" "IMAPClient" "version" "1.0")')
@@ -1890,7 +1890,7 @@ class DDGEmailMailbox(BaseMailbox):
                 _, msg_nums = conn.search(None, "ALL")
                 ids = msg_nums[0].split() if msg_nums and msg_nums[0] else []
 
-                # 首次轮询：把所有已有邮件标记为已读，只等新邮件
+                # First poll: mark all existing emails as read, only wait for new ones
                 if not baseline_done:
                     seen_ids = set(ids)
                     baseline_done = True
@@ -1911,16 +1911,16 @@ class DDGEmailMailbox(BaseMailbox):
                     raw = msg_data[0][1]
                     msg = email_lib.message_from_bytes(raw)
 
-                    # 检查是否是发给 alias 的（DDG 转发会保留原始 To）
+                    # Check if sent to alias (DDG forwarding preserves original To)
                     to_addr = str(msg.get("To", "") or "").lower()
                     from_addr = str(msg.get("From", "") or "").lower()
                     subject = str(msg.get("Subject", "") or "")
 
-                    # 只看发给 alias 或来自 openai/noreply 的
+                    # Only look at emails sent to alias or from openai/noreply
                     if alias_email.lower() not in to_addr and "openai" not in from_addr and "noreply" not in from_addr:
                         continue
 
-                    # 提取正文
+                    # Extract body
                     body_parts = []
                     if msg.is_multipart():
                         for part in msg.walk():
@@ -1937,19 +1937,19 @@ class DDGEmailMailbox(BaseMailbox):
                             body_parts.append(payload.decode(charset, errors="replace"))
 
                     combined = subject + " " + " ".join(body_parts)
-                    # 去掉 style/script 标签内容，避免匹配 CSS 颜色值如 #000000
+                    # Remove style/script tag content to avoid matching CSS color values like #000000
                     combined = re.sub(r'<style[^>]*>.*?</style>', '', combined, flags=re.DOTALL | re.IGNORECASE)
                     combined = re.sub(r'<script[^>]*>.*?</script>', '', combined, flags=re.DOTALL | re.IGNORECASE)
                     combined = re.sub(r'<[^>]+>', ' ', combined)
                     m = re.search(pattern, combined)
                     if m:
                         code = m.group(1) if m.groups() else m.group(0)
-                        print(f"[DDG Email] IMAP 获取验证码: {code}")
+                        print(f"[DDG Email] IMAP received verification code: {code}")
                         return code
 
                 conn.logout()
             except (imaplib.IMAP4.error, OSError) as e:
-                print(f"[DDG Email] IMAP 连接异常: {e}")
+                print(f"[DDG Email] IMAP connection error: {e}")
             finally:
                 if conn:
                     try:
@@ -1958,7 +1958,7 @@ class DDGEmailMailbox(BaseMailbox):
                         pass
             time.sleep(5)
 
-        raise TimeoutError(f"DDG Email IMAP 等待验证码超时 ({timeout}s)")
+        raise TimeoutError(f"DDG Email IMAP timed out waiting for verification code ({timeout}s)")
 
     def wait_for_code(self, account: MailboxAccount, keyword: str = "",
                       timeout: int = 120, before_ids: set = None,

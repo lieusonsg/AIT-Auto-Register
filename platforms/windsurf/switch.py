@@ -1,13 +1,13 @@
 """
-Windsurf 桌面应用账号切换 —— 纯协议实现
-支持 macOS / Windows / Linux
+Windsurf desktop app account switching -- pure protocol implementation
+Supports macOS / Windows / Linux
 
-切换流程（无需浏览器、无需操作 Electron safeStorage）：
-1. 用 session_token 调 GetOneTimeAuthToken API 获取一次性 OTT
-2. 通过 windsurf:// deep link 将 OTT 传给 Windsurf 桌面端
-3. Windsurf 内部用 OTT 完成认证并切换账号
+Switching flow (no browser needed, no Electron safeStorage manipulation):
+1. Use session_token to call GetOneTimeAuthToken API to obtain a one-time OTT
+2. Pass the OTT to Windsurf desktop via windsurf:// deep link
+3. Windsurf internally uses the OTT to complete authentication and switch account
 
-Windsurf 认证信息缓存在 state.vscdb SQLite 数据库中:
+Windsurf authentication info is cached in the state.vscdb SQLite database:
   macOS:   ~/Library/Application Support/Windsurf/User/globalStorage/state.vscdb
   Windows: %APPDATA%/Windsurf/User/globalStorage/state.vscdb
   Linux:   ~/.config/Windsurf/User/globalStorage/state.vscdb
@@ -31,7 +31,7 @@ _DB_KEY = "windsurfAuthStatus"
 
 
 def _get_windsurf_config_dir() -> str:
-    """获取 Windsurf 配置目录路径"""
+    """Get Windsurf configuration directory path"""
     system = platform.system()
 
     if system == "Darwin":
@@ -49,7 +49,7 @@ def _get_windsurf_config_dir() -> str:
 
 
 def _get_windsurf_db_path() -> str:
-    """获取 Windsurf state.vscdb 路径"""
+    """Get Windsurf state.vscdb path"""
     config_dir = _get_windsurf_config_dir()
     return os.path.join(config_dir, "globalStorage", "state.vscdb")
 
@@ -81,7 +81,7 @@ def _windsurf_process_patterns() -> list[str]:
 
 
 def _read_db_key(db_path: str, key: str) -> str | None:
-    """从 state.vscdb 读取指定 key 的值"""
+    """Read the value for the specified key from state.vscdb"""
     if not os.path.exists(db_path):
         return None
     try:
@@ -92,12 +92,12 @@ def _read_db_key(db_path: str, key: str) -> str | None:
         finally:
             conn.close()
     except Exception as e:
-        logger.error(f"读取 state.vscdb 失败: {e}")
+        logger.error(f"Failed to read state.vscdb: {e}")
         return None
 
 
 def _write_db_key(db_path: str, key: str, value: str):
-    """写入 state.vscdb 指定 key 的值（INSERT OR REPLACE）"""
+    """Write a value for the specified key to state.vscdb (INSERT OR REPLACE)"""
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path, timeout=10)
     try:
@@ -114,16 +114,16 @@ def _write_db_key(db_path: str, key: str, value: str):
 
 
 def _clear_old_auth_keys(db_path: str):
-    """清除 state.vscdb 中旧账号的加密 session 和 auth 缓存"""
+    """Clear old account encrypted session and auth cache from state.vscdb"""
     if not os.path.exists(db_path):
         return
-    # 需要删除的 key 模式：
-    # - secret://...windsurf_auth.sessions  (Electron safeStorage 加密的 session)
+    # Key patterns to delete:
+    # - secret://...windsurf_auth.sessions  (Electron safeStorage encrypted session)
     # - secret://...windsurf_auth.apiServerUrl
-    # - codeium.windsurf-windsurf_auth      (当前用户名)
+    # - codeium.windsurf-windsurf_auth      (current username)
     # - codeium.windsurf-windsurf_auth-     (session UUID)
-    # - windsurf_auth-*                     (用户 session 引用)
-    # - windsurf.settings.cachedPlanInfo    (缓存的套餐信息)
+    # - windsurf_auth-*                     (user session reference)
+    # - windsurf.settings.cachedPlanInfo    (cached plan info)
     try:
         conn = sqlite3.connect(db_path, timeout=10)
         try:
@@ -132,15 +132,15 @@ def _clear_old_auth_keys(db_path: str):
             conn.execute("DELETE FROM ItemTable WHERE key LIKE 'windsurf_auth-%'")
             conn.execute("DELETE FROM ItemTable WHERE key = 'windsurf.settings.cachedPlanInfo'")
             conn.commit()
-            logger.info("已清除 Windsurf 旧 session 缓存")
+            logger.info("Cleared Windsurf old session cache")
         finally:
             conn.close()
     except Exception as e:
-        logger.warning(f"清除旧 auth key 失败（非致命）: {e}")
+        logger.warning(f"Failed to clear old auth keys (non-fatal): {e}")
 
 
 def _get_one_time_auth_token(session_token: str, proxy: str | None = None) -> str:
-    """用 session_token 调 GetOneTimeAuthToken 获取一次性认证 token"""
+    """Use session_token to call GetOneTimeAuthToken to obtain a one-time auth token"""
     from platforms.windsurf.core import WindsurfClient, _field_string
 
     api_key = session_token
@@ -151,16 +151,16 @@ def _get_one_time_auth_token(session_token: str, proxy: str | None = None) -> st
     raw = client._proto_post("GetOneTimeAuthToken", _field_string(1, api_key))
     # protobuf field 1 (wire type 2): tag=0x0a, next byte=length, then string
     if len(raw) < 3 or raw[0] != 0x0A:
-        raise RuntimeError(f"GetOneTimeAuthToken 返回格式异常: {raw[:20].hex()}")
+        raise RuntimeError(f"GetOneTimeAuthToken returned unexpected format: {raw[:20].hex()}")
     length = raw[1]
     ott = raw[2 : 2 + length].decode("utf-8")
     if not ott:
-        raise RuntimeError("GetOneTimeAuthToken 返回空 OTT")
+        raise RuntimeError("GetOneTimeAuthToken returned empty OTT")
     return ott
 
 
 def _open_deep_link(ott: str) -> bool:
-    """通过 windsurf:// deep link 将 OTT 传给 Windsurf 桌面端"""
+    """Pass OTT to Windsurf desktop via windsurf:// deep link"""
     deep_link = f"windsurf://codeium.windsurf#state=switch&access_token={quote(ott, safe='')}"
     system = platform.system()
     try:
@@ -172,7 +172,7 @@ def _open_deep_link(ott: str) -> bool:
             subprocess.run(["xdg-open", deep_link], timeout=5)
         return True
     except Exception as e:
-        logger.error(f"打开 deep link 失败: {e}")
+        logger.error(f"Failed to open deep link: {e}")
         return False
 
 
@@ -182,34 +182,34 @@ def switch_windsurf_account(
     proxy: str | None = None,
 ) -> Tuple[bool, str]:
     """
-    切换 Windsurf 桌面应用账号（纯协议，无需浏览器）
+    Switch Windsurf desktop app account (pure protocol, no browser needed)
 
-    流程:
-    1. 用 session_token 调 GetOneTimeAuthToken API → 获取 OTT
-    2. 通过 windsurf:// deep link 传给 Windsurf → 完成认证切换
+    Flow:
+    1. Use session_token to call GetOneTimeAuthToken API -> obtain OTT
+    2. Pass OTT to Windsurf via windsurf:// deep link -> complete auth switch
 
     Returns:
         (success, message)
     """
     if not session_token:
-        return False, "缺少 session_token，无法切换"
+        return False, "Missing session_token, cannot switch"
 
     try:
         ott = _get_one_time_auth_token(session_token, proxy=proxy)
-        logger.info(f"获取 OTT 成功: {ott[:20]}...")
+        logger.info(f"Obtained OTT successfully: {ott[:20]}...")
 
         if not _open_deep_link(ott):
-            return False, "获取 OTT 成功但无法打开 deep link，请手动打开 Windsurf"
+            return False, "OTT obtained successfully but failed to open deep link, please open Windsurf manually"
 
-        return True, "Windsurf 账号切换指令已发送，请在 Windsurf 中确认"
+        return True, "Windsurf account switch command sent, please confirm in Windsurf"
 
     except Exception as e:
-        logger.error(f"Windsurf 账号切换失败: {e}")
-        return False, f"切换失败: {str(e)}"
+        logger.error(f"Windsurf account switch failed: {e}")
+        return False, f"Switch failed: {str(e)}"
 
 
 def restart_windsurf_ide() -> Tuple[bool, str]:
-    """关闭并重启 Windsurf IDE"""
+    """Close and restart Windsurf IDE"""
     system = platform.system()
 
     try:
@@ -224,8 +224,8 @@ def restart_windsurf_ide() -> Tuple[bool, str]:
             for app_path in _windsurf_install_paths():
                 if app_path.endswith(".app") and os.path.exists(app_path):
                     subprocess.Popen(["open", "-a", app_path])
-                    return True, "Windsurf IDE 已重启"
-            return True, "已关闭 Windsurf IDE（未找到应用路径，请手动启动）"
+                    return True, "Windsurf IDE restarted"
+            return True, "Windsurf IDE closed (application path not found, please start manually)"
 
         elif system == "Windows":
             subprocess.run(
@@ -239,8 +239,8 @@ def restart_windsurf_ide() -> Tuple[bool, str]:
             for exe_path in _windsurf_install_paths():
                 if os.path.exists(exe_path):
                     subprocess.Popen([exe_path])
-                    return True, "Windsurf IDE 已重启"
-            return True, "已关闭 Windsurf IDE（未找到应用路径，请手动启动）"
+                    return True, "Windsurf IDE restarted"
+            return True, "Windsurf IDE closed (application path not found, please start manually)"
 
         else:  # Linux
             subprocess.run(["pkill", "-f", "windsurf"], capture_output=True, timeout=5)
@@ -249,21 +249,21 @@ def restart_windsurf_ide() -> Tuple[bool, str]:
             for path in ["/usr/bin/windsurf", os.path.expanduser("~/.local/bin/windsurf")]:
                 if os.path.exists(path):
                     subprocess.Popen([path])
-                    return True, "Windsurf IDE 已重启"
+                    return True, "Windsurf IDE restarted"
 
             try:
                 subprocess.Popen(["windsurf"])
-                return True, "Windsurf IDE 已重启"
+                return True, "Windsurf IDE restarted"
             except FileNotFoundError:
-                return True, "已关闭 Windsurf IDE（未找到应用路径，请手动启动）"
+                return True, "Windsurf IDE closed (application path not found, please start manually)"
 
     except Exception as e:
-        logger.error(f"Windsurf IDE 重启失败: {e}")
-        return False, f"重启失败: {str(e)}"
+        logger.error(f"Windsurf IDE restart failed: {e}")
+        return False, f"Restart failed: {str(e)}"
 
 
 def read_current_windsurf_account() -> dict | None:
-    """读取当前 Windsurf IDE 正在使用的账号信息"""
+    """Read the current Windsurf IDE account info"""
     db_path = _get_windsurf_db_path()
     raw = _read_db_key(db_path, _DB_KEY)
     if not raw:
@@ -278,7 +278,7 @@ def read_current_windsurf_account() -> dict | None:
     if not api_key:
         return None
 
-    # apiKey 格式: "devin-session-token$<JWT>"
+    # apiKey format: "devin-session-token$<JWT>"
     session_token = api_key
     if api_key.startswith("devin-session-token$"):
         session_token = api_key[len("devin-session-token$"):]
@@ -290,7 +290,7 @@ def read_current_windsurf_account() -> dict | None:
 
 
 def get_windsurf_desktop_state() -> dict:
-    """获取 Windsurf 桌面应用状态"""
+    """Get Windsurf desktop app state"""
     current = read_current_windsurf_account() or {}
     db_path = _get_windsurf_db_path()
     config_dir = _get_windsurf_config_dir()
